@@ -298,5 +298,35 @@
     "conservation_status": "Least Concern",
     "description": "Amphibious fish that spends the majority of its life on land, using modified pectoral fins as crutches to crawl, skip, and even climb mangrove roots.",
     "fun_fact": "Mudskippers absorb oxygen through their moist skin while on land (cutaneous respiration) and can survive out of water for days."
+  },
+  {
+    "species": "walleye",
+    "scientific_name": "Sander vitreus",
+    "habitat": "Large lakes and rivers of North America — Great Lakes, Mississippi basin",
+    "diet": "Carnivore — perch, minnows, crayfish",
+    "max_size_cm": 107,
+    "conservation_status": "Least Concern",
+    "description": "North America's most popular freshwater sport and table fish. Named for its large, glassy eyes packed with a reflective layer (tapetum lucidum) that gives superior low-light vision.",
+    "fun_fact": "Walleye eyes glow in the dark when light hits them — the same tapetum lucidum that makes cats' eyes shine. This lets them hunt effectively at dusk and dawn when prey fish are nearly blind."
+  },
+  {
+    "species": "american_shad",
+    "scientific_name": "Alosa sapidissima",
+    "habitat": "Atlantic coast of North America — spawns in freshwater rivers, lives in ocean",
+    "diet": "Filter feeder — plankton, small crustaceans",
+    "max_size_cm": 76,
+    "conservation_status": "Least Concern",
+    "description": "The largest member of the herring family in North America and historically the most important food fish on the East Coast. Like salmon, it migrates from the ocean back to its birth river to spawn.",
+    "fun_fact": "American shad were so vital to early American survival that George Washington's troops at Valley Forge were saved in part by a massive shad run up the Schuylkill River in 1778."
+  },
+  {
+    "species": "smallmouth_bass",
+    "scientific_name": "Micropterus dolomieu",
+    "habitat": "Clear, cool lakes and rocky rivers of North America",
+    "diet": "Carnivore — crayfish, insects, small fish",
+    "max_size_cm": 69,
+    "conservation_status": "Least Concern",
+    "description": "Prized as one of the hardest-fighting freshwater sport fish pound-for-pound. Prefers cooler, clearer water than its largemouth cousin and is distinguished by vertical bronze-green bars along its sides.",
+    "fun_fact": "Smallmouth bass are devoted fathers — males fan and guard the nest, then herd the school of fry for up to a month after hatching, protecting them from predators."
   }
 ]

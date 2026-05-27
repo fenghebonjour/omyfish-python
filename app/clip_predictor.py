@@ -1,17 +1,34 @@
 """
-Zero-shot fish identifier using CLIP. No training or dataset required.
-Uses fish species names from fish_info.json as text prompts.
+Zero-shot fish identifier using CLIP with prompt ensembling.
+
+Instead of one prompt per species, we encode multiple templates and
+average the text embeddings. This is OpenAI's recommended technique
+for improving zero-shot CLIP accuracy without any training.
 """
 
 import json
 from pathlib import Path
 
 import torch
+import torch.nn.functional as F
 from PIL import Image
 from transformers import CLIPModel, CLIPProcessor
 
-UNCERTAIN_THRESHOLD = 0.08  # with 30 classes, random = ~3%; real hits cluster above 10%
+UNCERTAIN_THRESHOLD = 0.08
 MODEL_ID = "openai/clip-vit-base-patch32"
+
+# Multiple prompt templates per species — averaged at load time.
+# Diversity across template styles reduces sensitivity to any single phrasing.
+PROMPT_TEMPLATES = [
+    "a photo of a {}",
+    "a photograph of a {}",
+    "a {} fish",
+    "a {} swimming in water",
+    "a closeup of a {} fish",
+    "a {} caught while fishing",
+    "a picture of a {} fish in the wild",
+    "a {} fish underwater",
+]
 
 
 def _normalize(name: str) -> str:
@@ -27,20 +44,38 @@ class CLIPFishPredictor:
         fish_list = json.loads(Path(metadata_path).read_text())
         self.metadata = {_normalize(f["species"]): f for f in fish_list}
         self.species = [f["species"] for f in fish_list]
-        # Descriptive prompts outperform bare class names for CLIP
-        self.prompts = [
-            f"a photo of a {s.replace('_', ' ')} fish" for s in self.species
-        ]
+
+        # Precompute averaged text embeddings for all species (done once at load)
+        self.text_embeddings = self._build_text_embeddings()
+
+    @torch.no_grad()
+    def _build_text_embeddings(self) -> torch.Tensor:
+        """
+        For each species, encode all prompt templates and average the embeddings.
+        Returns a (num_species, embed_dim) tensor of L2-normalized embeddings.
+        """
+        species_embeddings = []
+        for species in self.species:
+            name = species.replace("_", " ")
+            prompts = [t.format(name) for t in PROMPT_TEMPLATES]
+            inputs = self.processor(text=prompts, return_tensors="pt", padding=True)
+            text_feats = self.model.get_text_features(**inputs)
+            text_feats = F.normalize(text_feats, dim=-1)
+            averaged = text_feats.mean(dim=0)
+            averaged = F.normalize(averaged, dim=-1)
+            species_embeddings.append(averaged)
+        return torch.stack(species_embeddings)  # (num_species, embed_dim)
 
     @torch.no_grad()
     def predict(self, image: Image.Image, top_k: int = 3) -> dict:
-        inputs = self.processor(
-            text=self.prompts,
-            images=image.convert("RGB"),
-            return_tensors="pt",
-            padding=True,
-        )
-        probs = self.model(**inputs).logits_per_image.softmax(dim=1)[0]
+        inputs = self.processor(images=image.convert("RGB"), return_tensors="pt")
+        image_feats = self.model.get_image_features(**inputs)
+        image_feats = F.normalize(image_feats, dim=-1)
+
+        # Cosine similarity scaled by CLIP's learned temperature (100.0 is standard)
+        logits = 100.0 * (image_feats @ self.text_embeddings.T)
+        probs = logits.softmax(dim=-1)[0]
+
         top_probs, top_idx = probs.topk(min(top_k, len(self.species)))
 
         predictions = []
