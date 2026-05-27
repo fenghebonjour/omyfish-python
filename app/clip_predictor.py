@@ -17,8 +17,6 @@ from transformers import CLIPModel, CLIPProcessor
 UNCERTAIN_THRESHOLD = 0.08
 MODEL_ID = "openai/clip-vit-base-patch32"
 
-# Multiple prompt templates per species — averaged at load time.
-# Diversity across template styles reduces sensitivity to any single phrasing.
 PROMPT_TEMPLATES = [
     "a photo of a {}",
     "a photograph of a {}",
@@ -45,34 +43,42 @@ class CLIPFishPredictor:
         self.metadata = {_normalize(f["species"]): f for f in fish_list}
         self.species = [f["species"] for f in fish_list]
 
-        # Precompute averaged text embeddings for all species (done once at load)
         self.text_embeddings = self._build_text_embeddings()
 
     @torch.no_grad()
     def _build_text_embeddings(self) -> torch.Tensor:
         """
-        For each species, encode all prompt templates and average the embeddings.
-        Returns a (num_species, embed_dim) tensor of L2-normalized embeddings.
+        Precompute averaged text embeddings for all species.
+        Uses text_model + text_projection directly to avoid API differences
+        across transformers versions.
         """
         species_embeddings = []
         for species in self.species:
             name = species.replace("_", " ")
             prompts = [t.format(name) for t in PROMPT_TEMPLATES]
-            inputs = self.processor(text=prompts, return_tensors="pt", padding=True)
-            text_feats = self.model.get_text_features(**inputs)
+            inputs = self.processor(text=prompts, return_tensors="pt", padding=True, truncation=True)
+
+            text_out = self.model.text_model(
+                input_ids=inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
+            )
+            text_feats = self.model.text_projection(text_out.pooler_output)
             text_feats = F.normalize(text_feats, dim=-1)
+
             averaged = text_feats.mean(dim=0)
             averaged = F.normalize(averaged, dim=-1)
             species_embeddings.append(averaged)
+
         return torch.stack(species_embeddings)  # (num_species, embed_dim)
 
     @torch.no_grad()
     def predict(self, image: Image.Image, top_k: int = 3) -> dict:
         inputs = self.processor(images=image.convert("RGB"), return_tensors="pt")
-        image_feats = self.model.get_image_features(**inputs)
+
+        image_out = self.model.vision_model(pixel_values=inputs["pixel_values"])
+        image_feats = self.model.visual_projection(image_out.pooler_output)
         image_feats = F.normalize(image_feats, dim=-1)
 
-        # Cosine similarity scaled by CLIP's learned temperature (100.0 is standard)
         logits = 100.0 * (image_feats @ self.text_embeddings.T)
         probs = logits.softmax(dim=-1)[0]
 
