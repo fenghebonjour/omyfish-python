@@ -1,10 +1,6 @@
-# Convenience wrapper — delegates to infrastructure/docker/docker-compose.yml
-# Usage: docker compose up --build -d
-# Or via make: make compose-up
-
 services:
 
-  db:
+  postgis:
     image: postgis/postgis:16-3.4
     environment:
       POSTGRES_DB: omyfish
@@ -22,28 +18,28 @@ services:
 
   api:
     build:
-      context: .
+      context: ../..
       dockerfile: infrastructure/docker/Dockerfile.api
     ports:
       - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://omyfish:omyfish@db:5432/omyfish
+      DATABASE_URL: postgresql://omyfish:omyfish@postgis:5432/omyfish
       ENV: production
     depends_on:
-      db:
+      postgis:
         condition: service_healthy
 
-  app:
+  web:
     build:
-      context: .
+      context: ../..
       dockerfile: infrastructure/docker/Dockerfile.web
     ports:
       - "8501:8501"
     environment:
-      DATABASE_URL: postgresql://omyfish:omyfish@db:5432/omyfish
+      DATABASE_URL: postgresql://omyfish:omyfish@postgis:5432/omyfish
       ENV: production
     depends_on:
-      db:
+      postgis:
         condition: service_healthy
 
 volumes:

@@ -40,6 +40,7 @@ kaggle>=1.5.16                       # Kaggle API for downloading fish datasets
 # GIS
 psycopg2-binary>=2.9.9               # PostgreSQL adapter (binary, no system libs needed)
 sqlalchemy>=2.0.0                    # ORM / query builder for PostGIS
+alembic>=1.13.0                      # Database migration framework (PostGIS path)
 piexif>=1.1.3                        # EXIF GPS extraction from uploaded images
 folium>=0.15.0                       # Leaflet-based map rendering
 streamlit-folium>=0.17.0             # Embed Folium maps in Streamlit

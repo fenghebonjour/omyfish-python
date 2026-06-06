@@ -1,0 +1,10 @@
+# Development environment configuration
+# Override any value with an environment variable of the same name (uppercased).
+
+env: development
+
+database_url: ""  # empty → SQLite at data/observations.db
+
+# Paths resolved relative to repo root when not set via env var
+checkpoint_path: checkpoints/best.pt
+metadata_path: data/metadata/fish_info.json

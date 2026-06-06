@@ -4,28 +4,28 @@ install:
 	pip install -r requirements.txt
 
 train:
-	python -m src.train --config configs/config.yaml
+	python -m services.fish_ai.training.train --config configs/training.yaml
 
 eval:
-	python -m src.evaluate --config configs/config.yaml
+	python -m services.fish_ai.training.evaluate --config configs/training.yaml
 
 app:
-	streamlit run app/main.py
+	streamlit run apps/omyfish_web/main.py
 
 api:
-	uvicorn app.api:app --reload --host 0.0.0.0 --port 8000
+	uvicorn apps.omyfish_api.main:app --reload --host 0.0.0.0 --port 8000
 
 predict:
-	python -m src.predict --image $(IMAGE)
+	python -m services.fish_ai.predictors.efficientnet --image $(IMAGE)
 
 db:
-	docker compose up db -d
+	docker compose -f infrastructure/docker/docker-compose.yml up postgis -d
 
 compose-up:
-	docker compose up --build -d
+	docker compose -f infrastructure/docker/docker-compose.yml up --build -d
 
 compose-down:
-	docker compose down
+	docker compose -f infrastructure/docker/docker-compose.yml down
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +

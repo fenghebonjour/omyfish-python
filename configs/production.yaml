@@ -1,0 +1,11 @@
+# Production environment configuration
+# All sensitive values MUST be injected as environment variables — never committed.
+
+env: production
+
+# Required env vars:
+#   DATABASE_URL  postgresql://user:pass@host:5432/omyfish
+#   CHECKPOINT_PATH  /app/checkpoints/best.pt
+#   METADATA_PATH    /app/data/metadata/fish_info.json
+
+# CORS: restrict in production — update apps/omyfish_api/main.py allow_origins
