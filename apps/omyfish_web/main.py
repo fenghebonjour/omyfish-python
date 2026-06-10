@@ -33,9 +33,6 @@ def save_observation_form(result, image):
     from apps.omyfish_api.repositories.observation_repository import ObservationRepository
     from shared.schemas.observation import ObservationCreate
 
-    if "obs_saved_msg" in st.session_state:
-        st.success(st.session_state.pop("obs_saved_msg"))
-
     gis = GISService()
     exif_coords = gis.extract_gps(image)
 
@@ -65,8 +62,7 @@ def save_observation_form(result, image):
                     source="exif" if exif_coords else "manual",
                 )
                 ObservationRepository().create(obs)
-                st.session_state["obs_saved_msg"] = f"Observation saved — {top['species']} at ({lat:.4f}, {lon:.4f})"
-                # Full app rerun so the Map tab re-queries the DB immediately
+                st.toast(f"Observation saved — {top['species']} at ({lat:.4f}, {lon:.4f})", icon="✅")
                 try:
                     st.rerun(scope="app")
                 except TypeError:
