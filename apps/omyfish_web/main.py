@@ -33,6 +33,9 @@ def save_observation_form(result, image):
     from apps.omyfish_api.repositories.observation_repository import ObservationRepository
     from shared.schemas.observation import ObservationCreate
 
+    if "obs_saved_msg" in st.session_state:
+        st.success(st.session_state.pop("obs_saved_msg"))
+
     gis = GISService()
     exif_coords = gis.extract_gps(image)
 
@@ -61,8 +64,13 @@ def save_observation_form(result, image):
                     longitude=lon,
                     source="exif" if exif_coords else "manual",
                 )
-                obs_id = ObservationRepository().create(obs)
-                st.success(f"Observation saved — {top['species']} at ({lat:.4f}, {lon:.4f})")
+                ObservationRepository().create(obs)
+                st.session_state["obs_saved_msg"] = f"Observation saved — {top['species']} at ({lat:.4f}, {lon:.4f})"
+                # Full app rerun so the Map tab re-queries the DB immediately
+                try:
+                    st.rerun(scope="app")
+                except TypeError:
+                    st.rerun()
             except Exception as e:
                 st.error(f"Could not save: {e}")
 
@@ -163,7 +171,7 @@ with tab_map:
                 icon=folium.Icon(color="blue", icon="info-sign"),
             ).add_to(m)
 
-        st_folium(m, width=None, height=550, returned_objects=[])
+        st_folium(m, width=None, height=550, returned_objects=[], key=f"map_{len(rows)}")
         st.caption(f"{len(rows)} observation{'s' if len(rows) != 1 else ''} stored")
 
     except ImportError:
