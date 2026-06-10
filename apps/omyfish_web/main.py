@@ -67,6 +67,8 @@ def save_observation_form(result, image):
                 st.error(f"Could not save: {e}")
 
 
+st.markdown("<style>html { overflow-y: scroll; }</style>", unsafe_allow_html=True)
+
 st.title("🐟 OMyFish")
 
 tab_identify, tab_map = st.tabs(["Identify", "Map"])
@@ -86,7 +88,7 @@ with tab_identify:
 
     if uploaded:
         image = Image.open(uploaded)
-        st.image(image, use_column_width=True)
+        st.image(image, use_container_width=True)
 
         cache_key = f"result_{uploaded.name}_{uploaded.size}"
         if cache_key not in st.session_state:
