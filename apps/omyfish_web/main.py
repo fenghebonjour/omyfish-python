@@ -7,6 +7,7 @@ sys.path.insert(0, str(ROOT))
 os.chdir(ROOT)
 
 import streamlit as st
+import streamlit.components.v1 as components
 from PIL import Image
 
 st.set_page_config(
@@ -71,9 +72,23 @@ def save_observation_form(result, image):
                 st.error(f"Could not save: {e}")
 
 
-st.markdown("""<style>
-[data-testid="stAppViewContainer"] { overflow-y: scroll; }
-</style>""", unsafe_allow_html=True)
+# Inject stable-scrollbar CSS directly into <head> via JS so it persists
+# across st.rerun() calls (st.markdown CSS is managed by React and briefly
+# absent during DOM reconciliation, causing the 10px scrollbar flicker).
+components.html("""
+<script>
+(function() {
+    var ID = 'omyfish-stable-scroll';
+    if (parent.document.getElementById(ID)) return;
+    var s = parent.document.createElement('style');
+    s.id = ID;
+    s.textContent =
+        '[data-testid="stAppViewContainer"],' +
+        '.appview-container { overflow-y: scroll !important; }';
+    parent.document.head.appendChild(s);
+})();
+</script>
+""", height=0, scrolling=False)
 
 st.title("🐟 OMyFish")
 
