@@ -15,6 +15,11 @@ st.set_page_config(
     layout="wide",
 )
 
+# Reserve scrollbar gutter so the layout doesn't shift 10px when the scrollbar
+# appears/disappears during reruns.  Placed after set_page_config (required to
+# be first) and before any widget so it lands high in the delta stream.
+st.html('<style>html{overflow-y:scroll!important}</style>')
+
 
 @st.cache_resource(show_spinner="Loading model...")
 def load_ai_service():
