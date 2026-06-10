@@ -67,7 +67,9 @@ def save_observation_form(result, image):
                 st.error(f"Could not save: {e}")
 
 
-st.markdown("<style>html { overflow-y: scroll; }</style>", unsafe_allow_html=True)
+st.markdown("""<style>
+[data-testid="stAppViewContainer"] { overflow-y: scroll; }
+</style>""", unsafe_allow_html=True)
 
 st.title("🐟 OMyFish")
 
