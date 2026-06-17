@@ -54,16 +54,28 @@ class ObservationRepository:
         ))
         return obs_id
 
-    def list(self, limit: int = 100) -> list:
+    def list(self, limit: int = 100, user_id: str | None = None) -> list:
         with get_db() as db:
-            rows = db.execute(
-                text("""
-                    SELECT id, species_name, scientific_name, confidence,
-                           timestamp, latitude, longitude, image_url, user_id, source
-                    FROM observations ORDER BY timestamp DESC LIMIT :limit
-                """),
-                {"limit": limit},
-            ).fetchall()
+            if user_id is not None:
+                rows = db.execute(
+                    text("""
+                        SELECT id, species_name, scientific_name, confidence,
+                               timestamp, latitude, longitude, image_url, user_id, source
+                        FROM observations
+                        WHERE user_id = :uid
+                        ORDER BY timestamp DESC LIMIT :limit
+                    """),
+                    {"uid": user_id, "limit": limit},
+                ).fetchall()
+            else:
+                rows = db.execute(
+                    text("""
+                        SELECT id, species_name, scientific_name, confidence,
+                               timestamp, latitude, longitude, image_url, user_id, source
+                        FROM observations ORDER BY timestamp DESC LIMIT :limit
+                    """),
+                    {"limit": limit},
+                ).fetchall()
         return [_row_to_dict(r) for r in rows]
 
 

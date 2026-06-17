@@ -223,36 +223,40 @@ with tab_identify:
 # ── Map tab ───────────────────────────────────────────────────────────────────
 
 with tab_map:
-    try:
-        import folium
-        from streamlit_folium import st_folium
-        from apps.omyfish_api.db.engine import ensure_db
-        from apps.omyfish_api.repositories.observation_repository import ObservationRepository
+    _map_user = st.session_state.get("auth_user")
+    if not _map_user:
+        st.info("Log in to view your observations on the map.")
+    else:
+        try:
+            import folium
+            from streamlit_folium import st_folium
+            from apps.omyfish_api.db.engine import ensure_db
+            from apps.omyfish_api.repositories.observation_repository import ObservationRepository
 
-        ensure_db()
-        rows = ObservationRepository().list(1000)
+            ensure_db()
+            rows = ObservationRepository().list(1000, user_id=_map_user["id"])
 
-        m = folium.Map(location=[20, 0], zoom_start=2, tiles="CartoDB positron")
-        for r in rows:
-            sci = f"<br><i>{r['scientific_name']}</i>" if r.get("scientific_name") else ""
-            ts = r.get("timestamp", "")
-            ts_str = ts[:16] if isinstance(ts, str) else (ts.strftime("%Y-%m-%d %H:%M") if hasattr(ts, "strftime") else str(ts or "")[:16])
-            popup_html = (
-                f"<b>{r['species_name']}</b>{sci}<br>"
-                f"{r['confidence'] * 100:.1f}% confidence<br>"
-                f"{ts_str}"
-            )
-            folium.Marker(
-                location=[r["latitude"], r["longitude"]],
-                popup=folium.Popup(popup_html, max_width=220),
-                tooltip=r["species_name"],
-                icon=folium.Icon(color="blue", icon="info-sign"),
-            ).add_to(m)
+            m = folium.Map(location=[20, 0], zoom_start=2, tiles="CartoDB positron")
+            for r in rows:
+                sci = f"<br><i>{r['scientific_name']}</i>" if r.get("scientific_name") else ""
+                ts = r.get("timestamp", "")
+                ts_str = ts[:16] if isinstance(ts, str) else (ts.strftime("%Y-%m-%d %H:%M") if hasattr(ts, "strftime") else str(ts or "")[:16])
+                popup_html = (
+                    f"<b>{r['species_name']}</b>{sci}<br>"
+                    f"{r['confidence'] * 100:.1f}% confidence<br>"
+                    f"{ts_str}"
+                )
+                folium.Marker(
+                    location=[r["latitude"], r["longitude"]],
+                    popup=folium.Popup(popup_html, max_width=220),
+                    tooltip=r["species_name"],
+                    icon=folium.Icon(color="blue", icon="info-sign"),
+                ).add_to(m)
 
-        st_folium(m, width=None, height=550, returned_objects=[], key=f"map_{len(rows)}")
-        st.caption(f"{len(rows)} observation{'s' if len(rows) != 1 else ''} stored")
+            st_folium(m, width=None, height=550, returned_objects=[], key=f"map_{_map_user['id']}_{len(rows)}")
+            st.caption(f"{len(rows)} observation{'s' if len(rows) != 1 else ''}")
 
-    except ImportError:
-        st.info("Install `folium` and `streamlit-folium` to enable the map view.")
-    except Exception as e:
-        st.error(f"Map error: {e}")
+        except ImportError:
+            st.info("Install `folium` and `streamlit-folium` to enable the map view.")
+        except Exception as e:
+            st.error(f"Map error: {e}")

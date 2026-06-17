@@ -22,8 +22,13 @@ def create_observation(
 
 
 @router.get("/observations")
-def list_observations(limit: int = 100, repo=Depends(get_obs_repo)):
-    return repo.list(limit)
+def list_observations(
+    limit: int = 100,
+    repo=Depends(get_obs_repo),
+    current_user: Optional[TokenData] = Depends(get_optional_user),
+):
+    uid = current_user.user_id if current_user else None
+    return repo.list(limit, user_id=uid)
 
 
 @router.get("/observations/geojson")
