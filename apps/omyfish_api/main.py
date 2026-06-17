@@ -7,11 +7,13 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from apps.omyfish_api.db.engine import ensure_db
-from apps.omyfish_api.routes import health, species, observations
+from apps.omyfish_api.routes import auth, health, observations, species, users
 
 app = FastAPI(title="OMyFish API", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
+app.include_router(auth.router)
+app.include_router(users.router)
 app.include_router(health.router)
 app.include_router(species.router)
 app.include_router(observations.router)

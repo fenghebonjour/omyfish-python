@@ -23,6 +23,63 @@ st.html('<style>html{overflow-y:scroll!important}</style>')
 
 _checkpoint_exists = Path(settings.checkpoint_path).exists()
 
+# ── Auth helpers ──────────────────────────────────────────────────────────────
+
+def _auth_repo():
+    from apps.omyfish_api.db.engine import ensure_db
+    from apps.omyfish_api.repositories.user_repository import UserRepository
+    ensure_db()
+    return UserRepository()
+
+
+@st.fragment
+def _auth_sidebar():
+    from apps.omyfish_api.auth import hash_password, verify_password
+
+    user = st.session_state.get("auth_user")
+
+    if user:
+        st.markdown(f"**{user['email']}**")
+        st.caption(f"Role: {user['role']}")
+        if st.button("Log out", use_container_width=True):
+            del st.session_state["auth_user"]
+            st.rerun()
+        return
+
+    tab_login, tab_register = st.tabs(["Log in", "Register"])
+
+    with tab_login:
+        email = st.text_input("Email", key="login_email")
+        password = st.text_input("Password", type="password", key="login_pw")
+        if st.button("Log in", use_container_width=True, key="btn_login"):
+            repo = _auth_repo()
+            u = repo.get_by_email(email)
+            if u and verify_password(password, u["hashed_password"]) and u["is_active"]:
+                st.session_state["auth_user"] = {"id": u["id"], "email": u["email"], "role": u["role"]}
+                st.rerun()
+            else:
+                st.error("Invalid credentials.")
+
+    with tab_register:
+        new_email = st.text_input("Email", key="reg_email")
+        new_pw = st.text_input("Password", type="password", key="reg_pw")
+        if st.button("Create account", use_container_width=True, key="btn_register"):
+            repo = _auth_repo()
+            if repo.get_by_email(new_email):
+                st.error("Email already registered.")
+            elif len(new_pw) < 8:
+                st.error("Password must be at least 8 characters.")
+            else:
+                u = repo.create(new_email, hash_password(new_pw))
+                st.session_state["auth_user"] = {"id": u["id"], "email": u["email"], "role": u["role"]}
+                st.rerun()
+
+
+with st.sidebar:
+    st.header("Account")
+    _auth_sidebar()
+    st.divider()
+
 
 @st.cache_resource(show_spinner="Loading model...")
 def load_ai_service(model: str):
@@ -69,7 +126,11 @@ def save_observation_form(result, image):
     with col2:
         lon = st.number_input("Longitude", value=float(exif_coords[1]) if exif_coords else 0.0, format="%.6f", step=0.0001)
 
-    if st.button("Save Observation", type="primary"):
+    auth_user = st.session_state.get("auth_user")
+    if not auth_user:
+        st.info("Log in to save observations.")
+
+    if st.button("Save Observation", type="primary", disabled=not auth_user):
         if lat == 0.0 and lon == 0.0 and not exif_coords:
             st.warning("Enter a location before saving.")
         else:
@@ -84,6 +145,7 @@ def save_observation_form(result, image):
                     latitude=lat,
                     longitude=lon,
                     source="exif" if exif_coords else "manual",
+                    user_id=auth_user["id"],
                 )
                 ObservationRepository().create(obs)
                 st.toast(f"Observation saved — {top['species']} at ({lat:.4f}, {lon:.4f})", icon="✅")

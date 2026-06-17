@@ -18,6 +18,10 @@ fastapi>=0.104.0                     # Web API framework for app/api.py
 uvicorn[standard]>=0.24.0            # ASGI server for FastAPI (port 8000)
 python-multipart>=0.0.6              # Multipart form data handling (file uploads)
 
+# Auth
+python-jose[cryptography]>=3.3.0     # JWT sign/verify
+bcrypt>=4.0.0                        # Password hashing
+
 # Configuration & Logging
 pyyaml>=6.0.1                        # YAML parser for configs/config.yaml
 tqdm>=4.66.0                         # Progress bars during training

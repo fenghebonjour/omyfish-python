@@ -59,6 +59,16 @@ def init_db():
                     source           TEXT DEFAULT 'upload'
                 )
             """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id               TEXT PRIMARY KEY,
+                    email            TEXT UNIQUE NOT NULL,
+                    hashed_password  TEXT NOT NULL,
+                    role             TEXT NOT NULL DEFAULT 'user',
+                    is_active        INTEGER NOT NULL DEFAULT 1,
+                    created_at       TEXT DEFAULT (datetime('now'))
+                )
+            """))
         conn.commit()
 
 

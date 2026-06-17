@@ -1,4 +1,5 @@
 import os
+import secrets
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -13,6 +14,11 @@ class Settings:
     )
     database_url: str = os.getenv("DATABASE_URL", "")
     env: str = os.getenv("ENV", "development")
+
+    # JWT — set JWT_SECRET in production; random default is safe for dev only
+    jwt_secret: str = os.getenv("JWT_SECRET", secrets.token_hex(32))
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 24h
 
 
 settings = Settings()
