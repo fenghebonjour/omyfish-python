@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-18  
 **Project:** OMyFish (Streamlit + FastAPI, local dev + HF Spaces)  
-**Time spent:** ~3 hours on what looked like a 5-minute task
+**Time spent:** ~5 hours on what looked like a 5-minute task
 
 ---
 
@@ -49,14 +49,27 @@ load_dotenv(_REPO_ROOT / ".env")
 
 This loads `.env` directly at import time, regardless of how the process was started. JWT_SECRET is now consistent across all launches.
 
+**Attempt 4 — Browser cookies via `extra-streamlit-components` (round 2)**  
+Once JWT_SECRET was fixed, tried again to get the token visible in the browser (F12 → Application → Cookies) as a learning exercise.  
+*Failure cascade:*
+- `_cm.set()` called inside `@st.fragment` → component isolated, cookie never sent to browser
+- Removed `@st.fragment` → still failed because `st.rerun()` immediately after `_cm.set()` cancels the pending component render before the browser can execute it
+- Removed `st.rerun()` from login → cookie appeared on 1st login, but logout broke (UI didn't update)
+- Added two-phase logout (flag + rerun) → `_cm.delete()` crashed with `KeyError` on even-numbered logouts (internal cache stale)
+- Fixed `KeyError` → cookie appeared on odd logins only, failed on even logins (alternating failure, no error in logs)
+
+Root cause of alternating failure: never fully diagnosed. The library's internal cookie cache gets out of sync with the browser state across the set→delete→set cycle. Silent failures with no traceback.
+
+*Final decision:* abandoned `extra-streamlit-components` entirely. The `.local_session` file approach is simpler, more secure (not accessible via JavaScript, not sent over the network, invisible to browser DevTools), and works 100% reliably.
+
 ### Result
 
 Login now persists across:
-- ✅ Page refresh (via `st.query_params`)
-- ✅ Full server restart (via `.local_session` file + consistent `JWT_SECRET`)
-- ✅ HF Spaces (fixed secret set in Space secrets, no file needed)
+- ✅ Page refresh (via `.local_session` file)
+- ✅ Full server restart (via `.local_session` file + consistent `JWT_SECRET` from `python-dotenv`)
+- ✅ HF Spaces (fixed secret set in Space secrets; file is ephemeral but acceptable)
 
-The two-line `python-dotenv` fix was the actual solution. Everything before it was treating symptoms.
+The two-line `python-dotenv` fix was the actual solution. Everything else was either treating symptoms or a failed detour into browser cookies.
 
 ---
 
@@ -73,3 +86,10 @@ Before wiring up a cookie-based auth flow, spend 30 seconds verifying that `_cm.
 
 **4. Debug the layer you think is working, not just the layer that's failing.**  
 The session file approach looked correct. The bug was one layer below it — in the config module that fed the secret to the JWT decoder. When a chain of operations silently fails, start by verifying each link independently.
+
+**5. Know when a library is fighting the framework.**  
+`extra-streamlit-components` CookieManager is built for simple Streamlit apps. Once you add `@st.fragment`, `st.rerun()`, and multi-step auth flows, it breaks in unpredictable ways — wrong parameter names, component isolation, stale internal caches, alternating silent failures. Hours lost. The signal to stop was the first `KeyError` with no traceback: a library that fails silently in your core auth flow is not a library you should trust.  
+The correct solution for HttpOnly cookies in Streamlit is a FastAPI endpoint that sets the `Set-Cookie` response header — the browser receives it as a proper server-set cookie. But that requires both services on the same domain (reverse proxy), which is a bigger architectural investment than the problem warrants for this project.
+
+**6. "More secure" is not always "more visible."**  
+A server-side file token won't appear in F12. That's a feature, not a bug — it means JavaScript, browser extensions, and XSS attacks can't read it. Don't mistake invisibility for absence.
