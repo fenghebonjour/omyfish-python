@@ -1,6 +1,6 @@
-# Beginner's Guide to omyfish
+# Beginner's Guide to omyfish-python
 
-Welcome to the omyfish project! This guide will help you understand the codebase quickly, whether you're new to machine learning or just new to *this* project.
+Welcome to the omyfish-python project! This guide will help you understand the codebase quickly, whether you're new to machine learning or just new to *this* project.
 
 ---
 
@@ -19,7 +19,7 @@ Welcome to the omyfish project! This guide will help you understand the codebase
 ## 📂 The Architecture at a Glance
 
 ```
-omyfish/
+omyfish-python/
 ├── services/                    ← The business logic
 │   ├── fish_ai/
 │   │   ├── model/              # The AI model (neural network)

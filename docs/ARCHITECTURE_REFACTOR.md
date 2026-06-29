@@ -27,7 +27,7 @@
 ## 1. Target Folder Structure
 
 ```
-omyfish/
+omyfish-python/
 
 ├── apps/
 │   ├── omyfish-api/                  # FastAPI backend

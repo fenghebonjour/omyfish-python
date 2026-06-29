@@ -8,7 +8,7 @@ This is the **Python AI-first origin** repo. Two enterprise versions live at:
 - `../omyfish-dotnet` — .NET 10 / Clean Architecture / CQRS
 - `../omyfish-java`   — Java 21 / Spring Boot / Hexagonal Architecture
 
-The Python AI service here (`services/fish_ai/`) is reused by both enterprise versions as an independent HTTP microservice.
+The standalone AI microservice lives at `../omyfish-ai` and is shared by all three enterprise projects. Predictors in `services/fish_ai/` are the canonical source — `omyfish-ai` copies them.
 
 ## Commands
 

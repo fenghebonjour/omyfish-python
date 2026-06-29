@@ -1,5 +1,5 @@
 # OMyFish — Session Log
-**Project:** `/home/bigblue/omyfish` | GitHub: `fenghebonjour/omyfish` | Live: `huggingface.co/spaces/fenghebonjour/omyfish`
+**Project:** `/home/bigblue/omyfish-python` | GitHub: `fenghebonjour/omyfish` | Live: `huggingface.co/spaces/fenghebonjour/omyfish`
 
 ---
 

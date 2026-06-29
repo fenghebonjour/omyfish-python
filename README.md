@@ -22,11 +22,12 @@ This repo is the **AI-first Python origin** of the OMyFish platform. Two enterpr
 
 | Repo | Stack | Architecture |
 |---|---|---|
-| **omyfish** (this) | Python 3.11 · PyTorch · FastAPI · Streamlit | Monolith → service-oriented |
+| **omyfish-python** (this) | Python 3.11 · PyTorch · FastAPI · Streamlit | Monolith → service-oriented |
 | [omyfish-dotnet](https://github.com/fenghebonjour/omyfish-dotnet) | .NET 10 · ASP.NET Core · EF Core · YARP | Clean Architecture + CQRS (MediatR) |
 | [omyfish-java](https://github.com/fenghebonjour/omyfish-java) | Java 21 · Spring Boot 3.x · Hibernate · Spring AMQP | Hexagonal Architecture + Event-Driven |
+| **omyfish-ai** | Python 3.11 · PyTorch · FastAPI | Standalone AI microservice — shared by all three |
 
-All three share the same Python AI service (EfficientNet-B3 + CLIP) and the same PostgreSQL/PostGIS + RabbitMQ + MinIO infrastructure stack.
+The shared AI microservice (`omyfish-ai`) wraps the EfficientNet-B3 predictor from this repo and exposes a single `POST /predict` endpoint consumed by all enterprise projects. All four share the same PostgreSQL/PostGIS + RabbitMQ + MinIO infrastructure stack.
 
 ---
 
