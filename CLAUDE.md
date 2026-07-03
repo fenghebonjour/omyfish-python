@@ -127,3 +127,9 @@ Standalone `evaluate()` prints a per-class classification report and saves a con
 ### All hyperparameters
 
 Live in `configs/training.yaml`. The only field that must not be manually set before training is `model.num_classes` — it is overwritten from the dataset automatically.
+
+## ML Training
+
+- Run Python training modules from the project root using `-m module` mode and the project venv (use python3, ensure sklearn/albumentations versions match code).
+- Always add checkpoint/resume support so CUDA crashes (often Windows power management related) don't lose progress.
+- Verify the dataset and species list against the intended domain (e.g. Quebec freshwater, not Mediterranean) before launching a run.
