@@ -14,6 +14,9 @@ An AI-powered field companion for anglers, naturalists, and citizen scientists. 
 
 **Live demo:** [huggingface.co/spaces/fenghebonjour/omyfish](https://huggingface.co/spaces/fenghebonjour/omyfish)
 
+> [!NOTE]
+> **Repo reorganization (July 2026):** this repository was previously named `omyfish` — the old link `github.com/fenghebonjour/omyfish` redirects here. The platform is now split into four repos: **omyfish-python** (this one), [omyfish-ai](https://github.com/fenghebonjour/omyfish-ai), [omyfish-java](https://github.com/fenghebonjour/omyfish-java), and [omyfish-dotnet](https://github.com/fenghebonjour/omyfish-dotnet). See [Project Family](#project-family) below.
+
 ---
 
 ## Project Family
@@ -25,7 +28,7 @@ This repo is the **AI-first Python origin** of the OMyFish platform. Two enterpr
 | **omyfish-python** (this) | Python 3.11 · PyTorch · FastAPI · Streamlit | Monolith → service-oriented |
 | [omyfish-dotnet](https://github.com/fenghebonjour/omyfish-dotnet) | .NET 10 · ASP.NET Core · EF Core · YARP | Clean Architecture + CQRS (MediatR) |
 | [omyfish-java](https://github.com/fenghebonjour/omyfish-java) | Java 21 · Spring Boot 3.x · Hibernate · Spring AMQP | Hexagonal Architecture + Event-Driven |
-| **omyfish-ai** | Python 3.11 · PyTorch · FastAPI | Standalone AI microservice — shared by all three |
+| [omyfish-ai](https://github.com/fenghebonjour/omyfish-ai) | Python 3.11 · PyTorch · FastAPI | Standalone AI microservice — shared by all three |
 
 The shared AI microservice (`omyfish-ai`) wraps the EfficientNet-B3 predictor from this repo and exposes a single `POST /predict` endpoint consumed by all enterprise projects. All four share the same PostgreSQL/PostGIS + RabbitMQ + MinIO infrastructure stack.
 
