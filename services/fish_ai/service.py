@@ -14,6 +14,8 @@ class FishAIService:
     def __init__(self, predictor: BaseFishPredictor, mode: str):
         self._predictor = predictor
         self.mode = mode  # "trained" | "clip"
+        self._gate = None
+        self._gate_failed = False
 
     @classmethod
     def build(
@@ -27,5 +29,24 @@ class FishAIService:
         from services.fish_ai.predictors.clip import CLIPFishPredictor
         return cls(CLIPFishPredictor(metadata_path), "clip")
 
+    def _fish_gate(self):
+        if self._gate is None and not self._gate_failed:
+            try:
+                from services.fish_ai.predictors.fish_gate import FishGate
+                self._gate = FishGate()
+            except Exception:
+                self._gate_failed = True
+        return self._gate
+
     def predict(self, image: Image.Image, top_k: int = 3) -> dict:
-        return self._predictor.predict(image, top_k=top_k)
+        gate = self._fish_gate()
+        if gate is not None and not gate.is_fish(image)[0]:
+            return {
+                "predictions": [],
+                "uncertain": True,
+                "is_fish": False,
+                "message": "That doesn't look like a fish — try a clear photo of a fish.",
+            }
+        result = self._predictor.predict(image, top_k=top_k)
+        result["is_fish"] = True
+        return result

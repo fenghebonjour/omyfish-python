@@ -12,3 +12,4 @@ class PredictionResponse(BaseModel):
     predictions: List[PredictionResult]
     uncertain: bool
     message: Optional[str] = None
+    is_fish: bool = True

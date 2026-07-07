@@ -231,41 +231,44 @@ with tab_identify:
                 st.session_state[cache_key] = ai_service.predict(image, top_k=3)
         result = st.session_state[cache_key]
 
-        if result["uncertain"]:
-            st.warning(result["message"])
+        if result.get("is_fish") is False:
+            st.error("🐟 " + (result.get("message") or "That doesn't look like a fish — try a clear photo of a fish."))
+        else:
+            if result["uncertain"]:
+                st.warning(result["message"])
 
-        medals = ["🥇", "🥈", "🥉"]
-        for i, pred in enumerate(result["predictions"]):
-            pct = pred["confidence"] * 100
-            with st.expander(f"{medals[i]} **{pred['species']}** — {pct:.1f}%", expanded=(i == 0)):
-                meta = pred["metadata"]
-                if meta:
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        if "scientific_name" in meta:
-                            st.markdown(f"*{meta['scientific_name']}*")
-                        if "habitat" in meta:
-                            st.markdown(f"**Habitat:** {meta['habitat']}")
-                        if "diet" in meta:
-                            st.markdown(f"**Diet:** {meta['diet']}")
-                    with c2:
-                        if "max_size_cm" in meta:
-                            st.markdown(f"**Max size:** {meta['max_size_cm']} cm")
-                        if "conservation_status" in meta:
-                            status = meta["conservation_status"]
-                            icon = "🔴" if "Endangered" in status else "🟡" if "Vulnerable" in status or "Threatened" in status else "🟢"
-                            st.markdown(f"**Conservation:** {icon} {status}")
-                    if "description" in meta:
-                        st.markdown(meta["description"])
-                    if "fun_fact" in meta:
-                        st.info(f"💡 {meta['fun_fact']}")
-                else:
-                    st.markdown("*No metadata available for this species.*")
-                st.progress(pred["confidence"])
+            medals = ["🥇", "🥈", "🥉"]
+            for i, pred in enumerate(result["predictions"]):
+                pct = pred["confidence"] * 100
+                with st.expander(f"{medals[i]} **{pred['species']}** — {pct:.1f}%", expanded=(i == 0)):
+                    meta = pred["metadata"]
+                    if meta:
+                        c1, c2 = st.columns(2)
+                        with c1:
+                            if "scientific_name" in meta:
+                                st.markdown(f"*{meta['scientific_name']}*")
+                            if "habitat" in meta:
+                                st.markdown(f"**Habitat:** {meta['habitat']}")
+                            if "diet" in meta:
+                                st.markdown(f"**Diet:** {meta['diet']}")
+                        with c2:
+                            if "max_size_cm" in meta:
+                                st.markdown(f"**Max size:** {meta['max_size_cm']} cm")
+                            if "conservation_status" in meta:
+                                status = meta["conservation_status"]
+                                icon = "🔴" if "Endangered" in status else "🟡" if "Vulnerable" in status or "Threatened" in status else "🟢"
+                                st.markdown(f"**Conservation:** {icon} {status}")
+                        if "description" in meta:
+                            st.markdown(meta["description"])
+                        if "fun_fact" in meta:
+                            st.info(f"💡 {meta['fun_fact']}")
+                    else:
+                        st.markdown("*No metadata available for this species.*")
+                    st.progress(pred["confidence"])
 
-        st.divider()
-        st.subheader("📍 Save Observation")
-        save_observation_form(result, image)
+            st.divider()
+            st.subheader("📍 Save Observation")
+            save_observation_form(result, image)
 
 # ── Map tab ───────────────────────────────────────────────────────────────────
 

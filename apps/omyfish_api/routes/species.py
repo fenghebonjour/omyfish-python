@@ -53,7 +53,7 @@ async def identify_fish(
     if coords:
         result["latitude"], result["longitude"] = coords
 
-    if save and coords:
+    if save and coords and result["predictions"]:
         top = result["predictions"][0]
         meta = top.get("metadata") or {}
         obs = ObservationCreate(
