@@ -30,7 +30,7 @@ This repo is the **AI-first Python origin** of the OMyFish platform. Two enterpr
 | [omyfish-java](https://github.com/fenghebonjour/omyfish-java) | Java 21 · Spring Boot 3.x · Hibernate · Spring AMQP | Hexagonal Architecture + Event-Driven |
 | [omyfish-ai](https://github.com/fenghebonjour/omyfish-ai) | Python 3.11 · PyTorch · FastAPI | Standalone AI microservice — shared by all three |
 
-The shared AI microservice (`omyfish-ai`) wraps the EfficientNet-B3 predictor from this repo and exposes a single `POST /predict` endpoint consumed by all enterprise projects. All four share the same PostgreSQL/PostGIS + RabbitMQ + MinIO infrastructure stack.
+The shared AI microservice (`omyfish-ai`) wraps the EfficientNet-B3 predictor from this repo (`POST /predict`) and also hosts the Bite Score fishing-timing forecast engine (`GET /bite-score/*`), both consumed by all enterprise projects. All four share the same PostgreSQL/PostGIS + RabbitMQ + MinIO infrastructure stack.
 
 ---
 
@@ -83,9 +83,19 @@ Zero-shot requires no data or training. Fine-tuned mode delivers higher accuracy
 
 ```bash
 pip install -r requirements.txt
+
+# Download the pre-trained weights (~46 MB) for fine-tuned mode
+gh release download model-v1 --dir checkpoints/
+
 make app          # Streamlit UI at http://localhost:8501
 make api          # FastAPI at http://localhost:8000
 ```
+
+The trained checkpoint is not stored in git — it's published as the
+[`model-v1`](https://github.com/fenghebonjour/omyfish-python/releases/tag/model-v1)
+release asset (`best.pt` + `classes.json`, both required for inference).
+Skip the download to run in zero-shot CLIP mode instead, or run `make train`
+to produce your own.
 
 ---
 

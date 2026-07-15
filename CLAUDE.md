@@ -8,12 +8,14 @@ This is the **Python AI-first origin** repo. Two enterprise versions live at:
 - `../omyfish-dotnet` — .NET 10 / Clean Architecture / CQRS
 - `../omyfish-java`   — Java 21 / Spring Boot / Hexagonal Architecture
 
-The standalone AI microservice lives at `../omyfish-ai` and is shared by all three enterprise projects. Predictors in `services/fish_ai/` are the canonical source — `omyfish-ai` copies them.
+The standalone AI microservice lives at `../omyfish-ai` and is shared by all three enterprise projects. Predictors in `services/fish_ai/` are the canonical source — `omyfish-ai` copies them. The Bite Score forecast domain (`bite_prediction/`, `/bite-score/*` endpoints) lives only in `omyfish-ai` and has no counterpart in this repo.
 
 ## Commands
 
 ```bash
 pip install -r requirements.txt          # install all dependencies
+
+gh release download model-v1 --dir checkpoints/   # fetch pre-trained best.pt + classes.json (not in git)
 
 make train                                # train the model
 make eval                                 # evaluate + save confusion_matrix.png
