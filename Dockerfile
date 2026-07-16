@@ -26,12 +26,28 @@ css = '<style>html{overflow-y:scroll!important}*,*::before,*::after{scrollbar-gu
 content = idx.read_text(); \
 idx.write_text(content.replace('</head>', css + '</head>', 1))"
 
+# ── Bundled bite-score service ────────────────────────────────────────────────
+# HF requires PRO for new Docker Spaces, so the shared omyfish-ai service
+# (single source of the bite-score domain) is bundled into this Space's image
+# instead of getting its own Space. A rebuild refreshes it from GitHub main.
+ADD https://github.com/fenghebonjour/omyfish-ai/archive/refs/heads/main.tar.gz /tmp/omyfish-ai.tar.gz
+RUN mkdir /ai && tar -xzf /tmp/omyfish-ai.tar.gz -C /ai --strip-components=1 \
+    && rm /tmp/omyfish-ai.tar.gz \
+    && pip install --no-cache-dir "httpx>=0.27.0" "ephem>=4.1.0"
+
+# Timing tab talks to the bundled service; fish-ID stays in-process via
+# Streamlit's own predictors, so the bundled copy skips its model loading.
+ENV BITE_SERVICE_URL=http://127.0.0.1:8000 \
+    DISABLE_FISH_ID=1
+
 # HuggingFace Spaces requires apps to listen on port 7860
 EXPOSE 7860
 
-CMD ["streamlit", "run", "apps/omyfish_web/main.py", \
-     "--server.port=7860", \
-     "--server.address=0.0.0.0", \
-     "--server.headless=true", \
-     "--server.enableCORS=false", \
-     "--server.enableXsrfProtection=false"]
+CMD ["/bin/sh", "-c", "\
+     uvicorn main:app --app-dir /ai --host 127.0.0.1 --port 8000 & \
+     exec streamlit run apps/omyfish_web/main.py \
+       --server.port=7860 \
+       --server.address=0.0.0.0 \
+       --server.headless=true \
+       --server.enableCORS=false \
+       --server.enableXsrfProtection=false"]
