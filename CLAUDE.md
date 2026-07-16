@@ -8,7 +8,7 @@ This is the **Python AI-first origin** repo. Two enterprise versions live at:
 - `../omyfish-dotnet` — .NET 10 / Clean Architecture / CQRS
 - `../omyfish-java`   — Java 21 / Spring Boot / Hexagonal Architecture
 
-The standalone AI microservice lives at `../omyfish-ai` and is shared by all three enterprise projects. Predictors in `services/fish_ai/` are the canonical source — `omyfish-ai` copies them. The Bite Score forecast domain (`bite_prediction/`, `/bite-score/*` endpoints) lives only in `omyfish-ai` and has no counterpart in this repo.
+The standalone AI microservice lives at `../omyfish-ai` and is shared by all three enterprise projects. Predictors in `services/fish_ai/` are the canonical source — `omyfish-ai` copies them. The Bite Score forecast domain (`bite_prediction/`, `/bite-score/*` endpoints) lives only in `omyfish-ai`; the Streamlit Timing tab (`apps/omyfish_web/timing.py`) consumes it over HTTP (`BITE_SERVICE_URL`, default `http://localhost:8000`).
 
 ## Commands
 

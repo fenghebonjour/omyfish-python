@@ -206,7 +206,14 @@ def save_observation_form(result, image):
 
 st.title("🐟 OMyFish")
 
-tab_identify, tab_map = st.tabs(["Identify", "Map"])
+tab_timing, tab_identify, tab_map = st.tabs(["Timing", "Identify", "Map"])
+
+# ── Timing tab ────────────────────────────────────────────────────────────────
+
+with tab_timing:
+    from apps.omyfish_web.timing import render_timing_tab
+
+    render_timing_tab()
 
 # ── Identify tab ─────────────────────────────────────────────────────────────
 

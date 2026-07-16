@@ -17,6 +17,9 @@ class Settings:
     database_url: str = os.getenv("DATABASE_URL", "")
     env: str = os.getenv("ENV", "development")
 
+    # Shared omyfish-ai service (bite-score forecasts live only there)
+    bite_service_url: str = os.getenv("BITE_SERVICE_URL", "http://localhost:8000")
+
     # JWT — set JWT_SECRET in production; random default is safe for dev only
     jwt_secret: str = os.getenv("JWT_SECRET", secrets.token_hex(32))
     jwt_algorithm: str = "HS256"

@@ -13,7 +13,8 @@ opencv-python-headless>=4.8.0        # Computer vision operations (headless for 
 albumentations>=1.3.1                # Image augmentation (includes underwater simulation: fog, blur)
 
 # Web Interfaces
-streamlit>=1.28.0                    # UI framework for app/main.py (port 8501)
+streamlit>=1.31.0                    # UI framework for app/main.py (port 8501); >=1.31 for st.popover (Timing tab)
+requests>=2.31.0                     # HTTP client for the omyfish-ai bite-score service (Timing tab)
 fastapi>=0.104.0                     # Web API framework for app/api.py
 uvicorn[standard]>=0.24.0            # ASGI server for FastAPI (port 8000)
 python-multipart>=0.0.6              # Multipart form data handling (file uploads)
