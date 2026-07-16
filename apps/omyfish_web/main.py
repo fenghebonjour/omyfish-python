@@ -24,25 +24,44 @@ st.html('<style>html{overflow-y:scroll!important}</style>')
 _checkpoint_exists = Path(settings.checkpoint_path).exists()
 
 # ── Token persistence ─────────────────────────────────────────────────────────
-# Token stored in .local_session file — survives page refresh and server restarts.
-# More secure than browser cookies: not accessible to JS, not in browser storage.
-# On HF Spaces the file is ephemeral — users re-login after a Space restart.
+# Token stored in a per-browser cookie. A server-side file (the previous
+# approach) is shared by every visitor on HF Spaces and leaked the owner's
+# login to anyone opening the Space. Reads use st.context.cookies (Streamlit
+# >=1.37); writes go through streamlit-js-eval since Streamlit has no native
+# cookie setter. SameSite=None; Secure is required on HF Spaces because the
+# app is iframed cross-site; plain http (local dev) falls back to SameSite=Lax.
 
-_SESSION_FILE = ROOT / ".local_session"
+# Remove the legacy server-side session file — it holds a token that every
+# visitor could read.
+(ROOT / ".local_session").unlink(missing_ok=True)
+
+_COOKIE_NAME = "omyfish_token"
 
 
 def _save_session(token: str):
-    try:
-        _SESSION_FILE.write_text(token)
-    except Exception:
-        pass
+    max_age = settings.jwt_expire_minutes * 60
+    st.session_state["_cookie_js"] = (
+        f"window.parent.document.cookie = '{_COOKIE_NAME}={token}; path=/; max-age={max_age}'"
+        " + (window.parent.location.protocol === 'https:'"
+        " ? '; SameSite=None; Secure' : '; SameSite=Lax')"
+    )
 
 
 def _clear_session():
-    try:
-        _SESSION_FILE.unlink(missing_ok=True)
-    except Exception:
-        pass
+    st.session_state["_cookie_js"] = (
+        f"window.parent.document.cookie = '{_COOKIE_NAME}=; path=/; max-age=0'"
+        " + (window.parent.location.protocol === 'https:'"
+        " ? '; SameSite=None; Secure' : '; SameSite=Lax')"
+    )
+
+
+# Pending cookie write from the previous run (login/logout sets it, then
+# reruns). Rendered here so the component mounts and executes after the
+# rerun completes.
+if "_cookie_js" in st.session_state:
+    from streamlit_js_eval import streamlit_js_eval
+
+    streamlit_js_eval(js_expressions=st.session_state.pop("_cookie_js"), key="cookie_sync")
 
 
 def _restore_from_token(token: str) -> bool:
@@ -61,9 +80,13 @@ def _restore_from_token(token: str) -> bool:
     return False
 
 
-if "auth_user" not in st.session_state and _SESSION_FILE.exists():
-    _token = _SESSION_FILE.read_text().strip()
+# st.context.cookies is fixed for the lifetime of the websocket connection,
+# so a failed restore is remembered to avoid re-decoding a stale cookie on
+# every rerun.
+if "auth_user" not in st.session_state and not st.session_state.get("_stale_cookie"):
+    _token = st.context.cookies.get(_COOKIE_NAME, "").strip()
     if _token and not _restore_from_token(_token):
+        st.session_state["_stale_cookie"] = True
         _clear_session()
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────

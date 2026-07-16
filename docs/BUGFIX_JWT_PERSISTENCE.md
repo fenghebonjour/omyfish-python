@@ -1,5 +1,14 @@
 # Bug Fix: JWT Session Persistence Across Server Restarts
 
+> **⚠️ Update 2026-07-16:** the `.local_session` file approach this document
+> concludes with turned out to be a security bug on HF Spaces: the file lives
+> on the shared server, so *every visitor* was silently logged in as whoever
+> logged in last. Replaced with a per-browser cookie — read natively via
+> `st.context.cookies` (Streamlit ≥1.37, no component round-trip), written via
+> `streamlit-js-eval` on the run *after* `st.rerun()` so the pending render
+> isn't cancelled (the failure mode of Attempt 4 below). See
+> `apps/omyfish_web/main.py`.
+
 **Date:** 2026-06-18  
 **Project:** OMyFish (Streamlit + FastAPI, local dev + HF Spaces)  
 **Time spent:** ~5 hours on what looked like a 5-minute task
