@@ -15,6 +15,7 @@ albumentations>=1.3.1                # Image augmentation (includes underwater s
 # Web Interfaces
 streamlit>=1.31.0                    # UI framework for app/main.py (port 8501); >=1.31 for st.popover (Timing tab)
 requests>=2.31.0                     # HTTP client for the omyfish-ai bite-score service (Timing tab)
+streamlit-js-eval>=0.1.7             # Browser geolocation for the Timing tab (permission prompt)
 fastapi>=0.104.0                     # Web API framework for app/api.py
 uvicorn[standard]>=0.24.0            # ASGI server for FastAPI (port 8000)
 python-multipart>=0.0.6              # Multipart form data handling (file uploads)

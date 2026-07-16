@@ -204,15 +204,36 @@ def _activity_chart(points: pd.DataFrame, major_ranges: list[dict],
 
 # ── Tab renderer ──────────────────────────────────────────────────────────────
 
+def _resolve_location() -> tuple[float, float] | tuple[None, None]:
+    """Browser geolocation (asks permission once); manual entry only as override."""
+    geo = None
+    try:
+        from streamlit_js_eval import get_geolocation
+        geo = get_geolocation(component_key="timing_geo")
+    except Exception:
+        pass
+
+    with st.expander("📍 Set location manually"):
+        col_lat, col_lon = st.columns(2)
+        m_lat = col_lat.number_input("Latitude", value=0.0, format="%.4f", key="timing_lat")
+        m_lon = col_lon.number_input("Longitude", value=0.0, format="%.4f", key="timing_lon")
+
+    if m_lat != 0.0 or m_lon != 0.0:  # manual entry overrides geolocation
+        return m_lat, m_lon
+    if geo and geo.get("coords"):
+        # ~100 m precision — plenty for weather, keeps the forecast cache stable
+        return round(geo["coords"]["latitude"], 3), round(geo["coords"]["longitude"], 3)
+
+    st.info("Allow location access in your browser — or set your coordinates manually above — "
+            "to see the 14-day fish-activity forecast.")
+    return None, None
+
+
 def render_timing_tab():
     st.caption("Fish-activity forecast for your fishing spot — driven by the shared Bite Score engine.")
 
-    col_lat, col_lon = st.columns(2)
-    lat = col_lat.number_input("Latitude", value=0.0, format="%.4f", key="timing_lat")
-    lon = col_lon.number_input("Longitude", value=0.0, format="%.4f", key="timing_lon")
-
-    if lat == 0.0 and lon == 0.0:
-        st.info("Enter your coordinates above to see the 14-day fish-activity forecast.")
+    lat, lon = _resolve_location()
+    if lat is None or lon is None:
         return
 
     try:
