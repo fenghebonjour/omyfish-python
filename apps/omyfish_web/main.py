@@ -11,7 +11,7 @@ from PIL import Image
 from shared.config import settings
 
 st.set_page_config(
-    page_title="OMyFish — Fish Species Identifier",
+    page_title="OMyFish — Your AI Fishing Companion",
     page_icon="🐟",
     layout="wide",
 )

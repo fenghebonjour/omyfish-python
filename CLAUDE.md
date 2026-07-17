@@ -47,7 +47,8 @@ apps/
     db/engine.py      SQLAlchemy engine + init_db (SQLite or PostGIS)
     main.py           All API routes (monolithic for now — splits in Phase 5)
   omyfish_web/
-    main.py           Streamlit frontend
+    main.py           Streamlit frontend (Timing · Identify · Map tabs)
+    timing.py         Timing tab — Bite Score forecast UI (calls omyfish-ai)
 
 services/
   fish_ai/
@@ -115,7 +116,7 @@ Class names come from folder names (case-sensitive at load time, normalized to l
 
 ### App layer
 
-- **Streamlit** (`apps/omyfish_web/main.py`): single-page upload → prediction → species card with conservation status color coding. Model is loaded once via `@st.cache_resource`.
+- **Streamlit** (`apps/omyfish_web/main.py`): three tabs — **Timing** (`timing.py`, Bite Score forecast rendered from omyfish-ai), **Identify** (upload → prediction → species card with conservation status color coding), **Map**. Model is loaded once via `@st.cache_resource`.
 - **FastAPI** (`apps/omyfish_api/main.py`): `POST /predict`, `POST /identify-fish`, `GET/POST /observations`, `GET /health`. Predictor is lazy-loaded on first request. CORS is open (`allow_origins=["*"]`) — restrict in production.
 
 ### Augmentation (`services/fish_ai/training/transforms.py`)

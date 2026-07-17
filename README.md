@@ -1,5 +1,6 @@
 ---
-title: OMyFish
+title: OMyFish — Your AI Fishing Companion
+short_description: When, Where, What you catch.
 emoji: 🐟
 colorFrom: blue
 colorTo: blue
@@ -8,9 +9,9 @@ pinned: false
 license: mit
 ---
 
-# OMyFish
+# OMyFish — Your AI Fishing Companion
 
-An AI-powered field companion for anglers, naturalists, and citizen scientists. Photograph a fish, get an instant species identification with ecological details, log the sighting with GPS coordinates, and track all your observations on a world map.
+**When, Where, What you catch.** An AI-powered companion for anglers, naturalists, and citizen scientists. Check the Timing forecast for the best hours to fish, photograph a fish for an instant species identification with ecological details, log the sighting with GPS coordinates, and track all your observations on a world map.
 
 **Live demo:** [huggingface.co/spaces/fenghebonjour/omyfish](https://huggingface.co/spaces/fenghebonjour/omyfish)
 
@@ -54,6 +55,9 @@ After identification, save the sighting with a location:
 
 ### Map
 All saved observations appear on an interactive world map (Folium). Switch to the **Map** tab to see every sighting — click a marker for species name, confidence, and timestamp.
+
+### Timing
+The **Timing** tab answers *when* to fish: an hourly Bite Score forecast (0–100) up to 14 days ahead for any location and species, with a daily outlook strip, Major/Minor peak windows, the six-factor breakdown behind every score (pressure, temperature, wind, water, solunar, sky), and storm/heavy-rain safety alerts. Served by the shared [omyfish-ai](https://github.com/fenghebonjour/omyfish-ai) service.
 
 ### API
 A FastAPI backend exposes the same capabilities programmatically:
@@ -158,7 +162,7 @@ Set the `DATABASE_URL` environment variable (or HuggingFace Space secret) to a P
 ```
 apps/
   omyfish_api/        FastAPI backend (predict, observations, GeoJSON)
-  omyfish_web/        Streamlit web UI
+  omyfish_web/        Streamlit web UI (Timing · Identify · Map tabs)
 
 services/
   fish_ai/
