@@ -1,0 +1,4 @@
+# Development/test dependencies — not needed in the deployed Space image
+-r requirements.txt
+pytest>=8.0
+httpx>=0.27.0                        # required by fastapi.testclient

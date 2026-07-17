@@ -1,7 +1,10 @@
-.PHONY: install train resume eval app api predict clean db compose-up compose-down download-na-freshwater
+.PHONY: install train resume eval app api predict test clean db compose-up compose-down download-na-freshwater
 
 install:
 	venv/bin/pip install -r requirements.txt
+
+test:
+	venv/bin/python -m pytest
 
 train:
 	venv/bin/python -m services.fish_ai.training.train --config configs/training.yaml
