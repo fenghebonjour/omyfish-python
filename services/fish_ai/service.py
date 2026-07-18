@@ -49,4 +49,6 @@ class FishAIService:
             }
         result = self._predictor.predict(image, top_k=top_k)
         result["is_fish"] = True
+        if self._gate_failed:
+            result["gate_unavailable"] = True
         return result
