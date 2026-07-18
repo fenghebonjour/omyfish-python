@@ -145,6 +145,20 @@ def _gauge_svg(score: float | None, label: str) -> str:
 
 # ── Chart ─────────────────────────────────────────────────────────────────────
 
+RAIN_MARK_THRESHOLD_PCT = 40  # chance of rain worth flagging on the chart
+
+
+def _window_rain_pct(day_hours: list[dict], w: dict) -> int | None:
+    """Peak chance of rain (%) across the hours inside a Major/Minor window."""
+    start = datetime.fromisoformat(w["start"])
+    end = datetime.fromisoformat(w["end"])
+    pcts = [h["precip_probability_pct"] for h in day_hours
+            if h.get("precip_probability_pct") is not None
+            and start <= datetime.fromisoformat(h["timestamp"]) < end]
+    peak = max(pcts, default=None)
+    return round(peak) if peak is not None and peak >= RAIN_MARK_THRESHOLD_PCT else None
+
+
 def _activity_chart(points: pd.DataFrame, major_ranges: list[dict],
                     minor_ranges: list[dict], sun_marks: list[dict]) -> alt.LayerChart:
     x_axis = alt.X(
@@ -187,13 +201,25 @@ def _activity_chart(points: pd.DataFrame, major_ranges: list[dict],
         layers.append(alt.Chart(sun_df).mark_text(color="#d97706", fontSize=10, dy=-6, baseline="bottom")
                       .encode(x="x:Q", y=alt.value(0), text="label:N"))
 
+    # Chance-of-rain markers (🌧️ + %) along the top for wet hours. Display
+    # only — rain probability is not part of the bite score.
+    rain_df = points[points["rain_label"] != ""]
+    if not rain_df.empty:
+        layers.append(
+            alt.Chart(rain_df).mark_text(fontSize=9, baseline="top", color="#0369a1")
+            .encode(x=alt.X("hour:Q", scale=alt.Scale(domain=[0, 24])),
+                    y=alt.value(4), text="rain_label:N")
+        )
+
     base = alt.Chart(points)
     nearest = alt.selection_point(nearest=True, on="pointermove", fields=["hour"], empty=False)
     layers += [
         base.mark_line(color="#2563eb", strokeWidth=2.5, interpolate="monotone").encode(x=x_axis, y=y_axis),
         base.mark_point(size=200, opacity=0).encode(
             x=x_axis, y=y_axis,
-            tooltip=[alt.Tooltip("time:N", title="Time"), alt.Tooltip("value:Q", title="Score", format=".0f")],
+            tooltip=[alt.Tooltip("time:N", title="Time"),
+                     alt.Tooltip("value:Q", title="Score", format=".0f"),
+                     alt.Tooltip("rain:N", title="Chance of rain")],
         ).add_params(nearest),
         base.mark_rule(color="#2563eb", strokeDash=[4, 2]).encode(x=x_axis).transform_filter(nearest),
         base.mark_point(color="#2563eb", filled=True, size=80).encode(x=x_axis, y=y_axis)
@@ -314,11 +340,31 @@ def render_timing_tab():
     gauge_score = day_window_mean(day_hours, value_of)
     st.html(_gauge_svg(gauge_score, gauge_label(factor_tab, gauge_score)))
 
-    points = pd.DataFrame([{
+    def _rain_pct(h: dict) -> int | None:
+        pct = h.get("precip_probability_pct")
+        return round(pct) if pct is not None else None
+
+    rows = [{
         "hour": datetime.fromisoformat(h["timestamp"]).hour,
         "time": _fmt_time(datetime.fromisoformat(h["timestamp"])),
         "value": value_of(h),
-    } for h in day_hours])
+        "rain_pct": _rain_pct(h),
+        "rain": "–" if _rain_pct(h) is None else f"{_rain_pct(h)}%",
+        "rain_label": "",
+    } for h in day_hours]
+
+    # One 🌧️% marker per wet stretch (its peak hour) so labels never overlap;
+    # the tooltip still shows the chance for every hour.
+    stretch: list[dict] = []
+    for row in rows + [{"rain_pct": None}]:
+        if (row.get("rain_pct") or 0) >= RAIN_MARK_THRESHOLD_PCT:
+            stretch.append(row)
+        elif stretch:
+            peak = max(stretch, key=lambda r: r["rain_pct"])
+            peak["rain_label"] = f"🌧️{peak['rain_pct']}%"
+            stretch = []
+
+    points = pd.DataFrame(rows)
 
     majors = _windows_for_day(forecast["major_windows"], selected_day)
     minors = _windows_for_day(forecast["minor_windows"], selected_day)
@@ -345,4 +391,6 @@ def render_timing_tab():
             if not windows:
                 st.caption("None this day")
             for w in windows:
-                st.markdown(f"🕐 {_fmt_window(w)}")
+                rain = _window_rain_pct(day_hours, w)
+                st.markdown(f"🕐 {_fmt_window(w)}"
+                            + (f" &nbsp;🌧️ {rain}%" if rain is not None else ""))
