@@ -76,9 +76,9 @@ def not_a_fish_client(client):
 @pytest.fixture
 def auth_headers(client):
     """Register + login a user; returns (headers, user_id)."""
-    client.post("/auth/register", json={"email": "angler@example.com", "password": "pw12345"})
+    client.post("/auth/register", json={"email": "angler@example.com", "password": "pw123456"})
     token = client.post(
-        "/auth/login", json={"email": "angler@example.com", "password": "pw12345"}
+        "/auth/login", json={"email": "angler@example.com", "password": "pw123456"}
     ).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     user_id = client.get("/auth/me", headers=headers).json()["id"]

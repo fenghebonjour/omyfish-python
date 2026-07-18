@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -7,13 +8,21 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from apps.omyfish_api.db.engine import ensure_db
-from apps.omyfish_api.routes import auth, health, observations, species, users
+from apps.omyfish_api.routes import admin, auth, billing, health, observations, species, users
 
 app = FastAPI(title="OMyFish API", version="2.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# Set ALLOWED_ORIGINS (comma-separated) in production; * is the dev default.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=os.getenv("ALLOWED_ORIGINS", "*").split(","),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth.router)
 app.include_router(users.router)
+app.include_router(billing.router)
+app.include_router(admin.router)
 app.include_router(health.router)
 app.include_router(species.router)
 app.include_router(observations.router)

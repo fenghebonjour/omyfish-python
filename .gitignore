@@ -27,3 +27,6 @@ notebooks/*.ipynb
 
 # Local docs (not committed)
 docs/BEGINNER_GUIDE.md
+data/exports/
+data/observations.db
+data/training/

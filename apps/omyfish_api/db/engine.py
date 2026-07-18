@@ -44,6 +44,14 @@ def init_db():
                 "CREATE INDEX IF NOT EXISTS observations_geom_idx "
                 "ON observations USING GIST(geom)"
             ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS observations_user_ts_idx "
+                "ON observations (user_id, timestamp DESC)"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS observations_ts_idx "
+                "ON observations (timestamp DESC)"
+            ))
         else:
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS observations (
@@ -59,6 +67,14 @@ def init_db():
                     source           TEXT DEFAULT 'upload'
                 )
             """))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS observations_user_ts_idx "
+                "ON observations (user_id, timestamp DESC)"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS observations_ts_idx "
+                "ON observations (timestamp DESC)"
+            ))
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS users (
                     id               TEXT PRIMARY KEY,
@@ -67,6 +83,20 @@ def init_db():
                     role             TEXT NOT NULL DEFAULT 'user',
                     is_active        INTEGER NOT NULL DEFAULT 1,
                     created_at       TEXT DEFAULT (datetime('now'))
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS subscriptions (
+                    id                      TEXT PRIMARY KEY,
+                    user_id                 TEXT NOT NULL UNIQUE,
+                    status                  TEXT NOT NULL DEFAULT 'trialing',
+                    plan                    TEXT,
+                    trial_end               TEXT,
+                    current_period_end      TEXT,
+                    stripe_customer_id      TEXT,
+                    stripe_subscription_id  TEXT,
+                    created_at              TEXT DEFAULT (datetime('now')),
+                    updated_at              TEXT DEFAULT (datetime('now'))
                 )
             """))
         conn.commit()

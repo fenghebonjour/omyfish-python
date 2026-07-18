@@ -106,6 +106,8 @@ def _auth_sidebar():
     if user:
         st.markdown(f"**{user['email']}**")
         st.caption(f"Role: {user['role']}")
+        from apps.omyfish_web.admin import subscription_sidebar
+        subscription_sidebar(user)
         if st.button("Log out", use_container_width=True):
             del st.session_state["auth_user"]
             _clear_session()
@@ -138,7 +140,11 @@ def _auth_sidebar():
             elif len(new_pw) < 8:
                 st.error("Password must be at least 8 characters.")
             else:
-                u = repo.create(new_email, hash_password(new_pw))
+                from shared.config import settings
+                role = "admin" if new_email.strip().lower() in settings.admin_emails else "user"
+                u = repo.create(new_email, hash_password(new_pw), role=role)
+                from apps.omyfish_api.repositories.subscription_repository import SubscriptionRepository
+                SubscriptionRepository().start_trial(u["id"])
                 st.session_state["auth_user"] = {"id": u["id"], "email": u["email"], "role": u["role"]}
                 from apps.omyfish_api.auth import create_access_token
                 _save_session(create_access_token(u["id"], u["role"]))
@@ -229,7 +235,15 @@ def save_observation_form(result, image):
 
 st.title("🐟 OMyFish")
 
-tab_timing, tab_identify, tab_map = st.tabs(["Timing", "Identify", "Map"])
+_is_admin = (st.session_state.get("auth_user") or {}).get("role") == "admin"
+if _is_admin:
+    tab_timing, tab_identify, tab_map, tab_admin = st.tabs(
+        ["Timing", "Identify", "Map", "Admin"])
+    with tab_admin:
+        from apps.omyfish_web.admin import render_admin
+        render_admin()
+else:
+    tab_timing, tab_identify, tab_map = st.tabs(["Timing", "Identify", "Map"])
 
 # ── Timing tab ────────────────────────────────────────────────────────────────
 

@@ -9,8 +9,12 @@ from shared.schemas.observation import ObservationCreate
 
 router = APIRouter()
 
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+
 
 def _open_image(data: bytes) -> Image.Image:
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(413, "Image too large (max 10 MB).")
     try:
         return Image.open(io.BytesIO(data))
     except Exception:

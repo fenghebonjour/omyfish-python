@@ -21,16 +21,16 @@ def test_health(client):
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 def test_register_login_me_flow(client):
-    r = client.post("/auth/register", json={"email": "a@b.c", "password": "hunter2"})
+    r = client.post("/auth/register", json={"email": "a@b.c", "password": "hunter2222"})
     assert r.status_code == 201
     body = r.json()
     assert body["email"] == "a@b.c" and body["role"] == "user" and body["is_active"]
 
     assert client.post(
-        "/auth/register", json={"email": "a@b.c", "password": "other"}
+        "/auth/register", json={"email": "a@b.c", "password": "otherpassword"}
     ).status_code == 409
 
-    r = client.post("/auth/login", json={"email": "a@b.c", "password": "hunter2"})
+    r = client.post("/auth/login", json={"email": "a@b.c", "password": "hunter2222"})
     assert r.status_code == 200
     token = r.json()["access_token"]
 
@@ -38,8 +38,18 @@ def test_register_login_me_flow(client):
     assert r.status_code == 200 and r.json()["email"] == "a@b.c"
 
 
+def test_register_rejects_short_password(client):
+    r = client.post("/auth/register", json={"email": "a@b.c", "password": "short7c"})
+    assert r.status_code == 422
+
+
+def test_register_rejects_invalid_email(client):
+    r = client.post("/auth/register", json={"email": "not-an-email", "password": "longenough8"})
+    assert r.status_code == 422
+
+
 def test_login_wrong_password_rejected(client):
-    client.post("/auth/register", json={"email": "a@b.c", "password": "hunter2"})
+    client.post("/auth/register", json={"email": "a@b.c", "password": "hunter2222"})
     assert client.post(
         "/auth/login", json={"email": "a@b.c", "password": "nope"}
     ).status_code == 401
@@ -142,6 +152,12 @@ def test_identify_fish_without_coords_does_not_save(client):
 def test_predict_rejects_corrupt_image_bytes(client):
     r = client.post("/predict", files={"file": ("x.png", io.BytesIO(b"not an image"), "image/png")})
     assert r.status_code == 400
+
+
+def test_predict_rejects_oversized_upload(client):
+    big = io.BytesIO(b"\x00" * (10 * 1024 * 1024 + 1))
+    r = client.post("/predict", files={"file": ("big.png", big, "image/png")})
+    assert r.status_code == 413
 
 
 # ── Not-a-fish edge case (e.g. a cat photo) ───────────────────────────────────
