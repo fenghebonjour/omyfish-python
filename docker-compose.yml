@@ -2,6 +2,13 @@
 # Usage: docker compose up --build -d
 # Or via make: make compose-up
 
+networks:
+  # Created by ../omyfish-ai's compose — start that stack first so the
+  # Timing tab has a bite-score service to talk to:
+  #   cd ../omyfish-ai && docker compose up -d
+  omyfish-shared:
+    external: true
+
 services:
 
   db:
@@ -25,7 +32,8 @@ services:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.api
     ports:
-      - "8000:8000"
+      # Host 8001 — host 8000 belongs to the shared omyfish-ai service
+      - "8001:8000"
     environment:
       DATABASE_URL: postgresql://omyfish:omyfish@db:5432/omyfish
       ENV: production
@@ -42,6 +50,10 @@ services:
     environment:
       DATABASE_URL: postgresql://omyfish:omyfish@db:5432/omyfish
       ENV: production
+      BITE_SERVICE_URL: http://ai-service:8000
+    networks:
+      - default
+      - omyfish-shared
     depends_on:
       db:
         condition: service_healthy
