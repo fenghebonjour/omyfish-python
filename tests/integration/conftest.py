@@ -10,12 +10,21 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
+NOT_A_FISH = {
+    "predictions": [],
+    "uncertain": True,
+    "is_fish": False,
+    "message": "That doesn't look like a fish — try a clear photo of a fish.",
+}
+
+
 class StubAIService:
     """Canned predictions — keeps API tests independent of model checkpoints."""
 
     mode = "stub"
 
-    def __init__(self, predictions=None):
+    def __init__(self, predictions=None, response=None):
+        self.response = response
         self.predictions = predictions if predictions is not None else [{
             "species": "walleye",
             "confidence": 0.91,
@@ -23,6 +32,8 @@ class StubAIService:
         }]
 
     def predict(self, image, top_k=3):
+        if self.response is not None:
+            return self.response
         return {
             "predictions": self.predictions[:top_k],
             "uncertain": False,
@@ -50,6 +61,16 @@ def client(tmp_path, monkeypatch):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def not_a_fish_client(client):
+    """Same app, but the AI stub rejects every upload as not-a-fish."""
+    from apps.omyfish_api.dependencies import get_ai_service
+    from apps.omyfish_api.main import app
+
+    app.dependency_overrides[get_ai_service] = lambda: StubAIService(response=NOT_A_FISH)
+    return client
 
 
 @pytest.fixture

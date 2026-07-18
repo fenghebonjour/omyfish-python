@@ -10,6 +10,13 @@ from shared.schemas.observation import ObservationCreate
 router = APIRouter()
 
 
+def _open_image(data: bytes) -> Image.Image:
+    try:
+        return Image.open(io.BytesIO(data))
+    except Exception:
+        raise HTTPException(400, "File is not a valid image.")
+
+
 @router.post("/predict")
 async def predict(
     file: UploadFile = File(...),
@@ -18,7 +25,7 @@ async def predict(
 ):
     if not (file.content_type or "").startswith("image/"):
         raise HTTPException(400, "File must be an image.")
-    image = Image.open(io.BytesIO(await file.read()))
+    image = _open_image(await file.read())
     return ai_service.predict(image, top_k=top_k)
 
 
@@ -37,7 +44,7 @@ async def identify_fish(
     if not (file.content_type or "").startswith("image/"):
         raise HTTPException(400, "File must be an image.")
 
-    image = Image.open(io.BytesIO(await file.read()))
+    image = _open_image(await file.read())
     result = ai_service.predict(image, top_k=top_k)
 
     coords = None

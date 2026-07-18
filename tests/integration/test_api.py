@@ -137,3 +137,33 @@ def test_identify_fish_without_coords_does_not_save(client):
     assert r.status_code == 200
     assert "observation_id" not in r.json()
     assert client.get("/observations").json() == []
+
+
+def test_predict_rejects_corrupt_image_bytes(client):
+    r = client.post("/predict", files={"file": ("x.png", io.BytesIO(b"not an image"), "image/png")})
+    assert r.status_code == 400
+
+
+# ── Not-a-fish edge case (e.g. a cat photo) ───────────────────────────────────
+
+def test_predict_not_a_fish(not_a_fish_client):
+    r = not_a_fish_client.post("/predict", files=_png_upload(name="cat.png"))
+    assert r.status_code == 200
+    body = r.json()
+    assert body["is_fish"] is False
+    assert body["predictions"] == []
+    assert body["uncertain"] is True
+    assert "fish" in body["message"]
+
+
+def test_identify_fish_not_a_fish_never_saves(not_a_fish_client):
+    r = not_a_fish_client.post(
+        "/identify-fish",
+        files=_png_upload(name="cat.png"),
+        data={"latitude": "46.8", "longitude": "-71.2", "save": "true"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["is_fish"] is False
+    assert "observation_id" not in body
+    assert not_a_fish_client.get("/observations").json() == []
