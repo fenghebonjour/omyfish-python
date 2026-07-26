@@ -27,7 +27,9 @@
     "max_size_cm": 150,
     "conservation_status": "Least Concern",
     "description": "Anadromous fish born in freshwater rivers that migrate to the ocean for feeding, then return to their birth river to spawn — often leaping waterfalls along the way.",
-    "fun_fact": "Salmon can leap up to 3.65 m (12 ft) to clear waterfalls during their spawning migration."
+    "fun_fact": "Salmon can leap up to 3.65 m (12 ft) to clear waterfalls during their spawning migration.",
+    "name_fr": "saumon atlantique",
+    "name_en": "Atlantic Salmon"
   },
   {
     "species": "atlantic_cod",
@@ -87,7 +89,9 @@
     "max_size_cm": 120,
     "conservation_status": "Least Concern",
     "description": "One of the most popular sport and aquaculture fish, recognizable by its distinctive pink-to-red lateral stripe and black spotting.",
-    "fun_fact": "The sea-run form of rainbow trout is called a steelhead and grows significantly larger than its landlocked counterpart."
+    "fun_fact": "The sea-run form of rainbow trout is called a steelhead and grows significantly larger than its landlocked counterpart.",
+    "name_fr": "truite arc-en-ciel",
+    "name_en": "Rainbow Trout"
   },
   {
     "species": "largemouth_bass",
@@ -97,7 +101,9 @@
     "max_size_cm": 97,
     "conservation_status": "Least Concern",
     "description": "The most popular freshwater game fish in North America, known for aggressive surface strikes and acrobatic fights when hooked.",
-    "fun_fact": "Largemouth bass can detect prey using both vision and their lateral line, which senses pressure changes in the water."
+    "fun_fact": "Largemouth bass can detect prey using both vision and their lateral line, which senses pressure changes in the water.",
+    "name_fr": "achigan à grande bouche",
+    "name_en": "Largemouth Bass"
   },
   {
     "species": "northern_pike",
@@ -107,7 +113,9 @@
     "max_size_cm": 150,
     "conservation_status": "Least Concern",
     "description": "An ambush predator with a torpedo-shaped body, elongated jaws packed with sharp teeth, and superb camouflage among aquatic vegetation.",
-    "fun_fact": "Pike have been documented attacking and eating ducklings, voles, and even small muskrats."
+    "fun_fact": "Pike have been documented attacking and eating ducklings, voles, and even small muskrats.",
+    "name_fr": "grand brochet",
+    "name_en": "Northern Pike"
   },
   {
     "species": "common_carp",
@@ -117,7 +125,9 @@
     "max_size_cm": 120,
     "conservation_status": "Vulnerable (native range)",
     "description": "One of the most widely distributed freshwater fish on Earth. Disrupts aquatic ecosystems by uprooting vegetation while feeding.",
-    "fun_fact": "Carp communicate using sound, producing grunts and clicks by grinding their pharyngeal (throat) teeth."
+    "fun_fact": "Carp communicate using sound, producing grunts and clicks by grinding their pharyngeal (throat) teeth.",
+    "name_fr": "carpe commune",
+    "name_en": "Common Carp"
   },
   {
     "species": "channel_catfish",
@@ -127,7 +137,9 @@
     "max_size_cm": 132,
     "conservation_status": "Least Concern",
     "description": "The most numerous catfish in North America and a widely farmed food fish. Navigates murky water using chemical-sensing barbels around its mouth.",
-    "fun_fact": "A 15 cm catfish has over 250,000 taste buds distributed across its entire body surface."
+    "fun_fact": "A 15 cm catfish has over 250,000 taste buds distributed across its entire body surface.",
+    "name_fr": "barbue de rivière",
+    "name_en": "Channel Catfish"
   },
   {
     "species": "european_perch",
@@ -237,7 +249,9 @@
     "max_size_cm": 84,
     "conservation_status": "Least Concern",
     "description": "Named for their dramatic transformation to vivid red with a green head during spawning. Their pink flesh from krill consumption makes them commercially prized.",
-    "fun_fact": "Sockeye salmon navigate thousands of miles using Earth's magnetic field and their sense of smell to locate their exact birth stream."
+    "fun_fact": "Sockeye salmon navigate thousands of miles using Earth's magnetic field and their sense of smell to locate their exact birth stream.",
+    "name_fr": "saumon rouge",
+    "name_en": "Sockeye Salmon"
   },
   {
     "species": "flying_fish",
@@ -307,7 +321,9 @@
     "max_size_cm": 107,
     "conservation_status": "Least Concern",
     "description": "North America's most popular freshwater sport and table fish. Named for its large, glassy eyes packed with a reflective layer (tapetum lucidum) that gives superior low-light vision.",
-    "fun_fact": "Walleye eyes glow in the dark when light hits them — the same tapetum lucidum that makes cats' eyes shine. This lets them hunt effectively at dusk and dawn when prey fish are nearly blind."
+    "fun_fact": "Walleye eyes glow in the dark when light hits them — the same tapetum lucidum that makes cats' eyes shine. This lets them hunt effectively at dusk and dawn when prey fish are nearly blind.",
+    "name_fr": "doré jaune",
+    "name_en": "Walleye"
   },
   {
     "species": "american_shad",
@@ -317,7 +333,9 @@
     "max_size_cm": 76,
     "conservation_status": "Least Concern",
     "description": "The largest member of the herring family in North America and historically the most important food fish on the East Coast. Like salmon, it migrates from the ocean back to its birth river to spawn.",
-    "fun_fact": "American shad were so vital to early American survival that George Washington's troops at Valley Forge were saved in part by a massive shad run up the Schuylkill River in 1778."
+    "fun_fact": "American shad were so vital to early American survival that George Washington's troops at Valley Forge were saved in part by a massive shad run up the Schuylkill River in 1778.",
+    "name_fr": "alose savoureuse",
+    "name_en": "American Shad"
   },
   {
     "species": "smallmouth_bass",
@@ -327,7 +345,9 @@
     "max_size_cm": 69,
     "conservation_status": "Least Concern",
     "description": "Prized as one of the hardest-fighting freshwater sport fish pound-for-pound. Prefers cooler, clearer water than its largemouth cousin and is distinguished by vertical bronze-green bars along its sides.",
-    "fun_fact": "Smallmouth bass are devoted fathers — males fan and guard the nest, then herd the school of fry for up to a month after hatching, protecting them from predators."
+    "fun_fact": "Smallmouth bass are devoted fathers — males fan and guard the nest, then herd the school of fry for up to a month after hatching, protecting them from predators.",
+    "name_fr": "achigan à petite bouche",
+    "name_en": "Smallmouth Bass"
   },
   {
     "species": "crappie",
@@ -337,7 +357,9 @@
     "max_size_cm": 53,
     "conservation_status": "Least Concern",
     "description": "Popular panfish prized by ice anglers and light-tackle enthusiasts. Black crappie prefers clear water and has irregular black spotting; white crappie tolerates turbid conditions and shows distinct vertical bars.",
-    "fun_fact": "Crappie school tightly around submerged structure. On sonar they appear as a dense cloud — anglers call this a crappie 'ball.'"
+    "fun_fact": "Crappie school tightly around submerged structure. On sonar they appear as a dense cloud — anglers call this a crappie 'ball.'",
+    "name_fr": "marigane noire",
+    "name_en": "Black Crappie"
   },
   {
     "species": "yellow_perch",
@@ -347,7 +369,9 @@
     "max_size_cm": 50,
     "conservation_status": "Least Concern",
     "description": "One of the most sought-after table fish in North America, especially for ice fishing. Recognized by its golden-yellow body with 6–8 dark vertical bars and orange-tinted lower fins.",
-    "fun_fact": "Yellow perch spawn in spring by draping long gelatinous egg ribbons over submerged vegetation — a single female can produce up to 40,000 eggs in one string."
+    "fun_fact": "Yellow perch spawn in spring by draping long gelatinous egg ribbons over submerged vegetation — a single female can produce up to 40,000 eggs in one string.",
+    "name_fr": "perchaude",
+    "name_en": "Yellow Perch"
   },
   {
     "species": "lake_sturgeon",
@@ -357,7 +381,9 @@
     "max_size_cm": 274,
     "conservation_status": "Vulnerable",
     "description": "A living fossil virtually unchanged for 135 million years, with rows of bony scutes instead of scales and a toothless protrusible mouth for vacuuming the bottom. Can live over 150 years and weigh more than 180 kg.",
-    "fun_fact": "Lake sturgeon grow so slowly that a 6 ft fish may be 80–100 years old. They were once so abundant in the Great Lakes that steamboats burned dried sturgeon as fuel."
+    "fun_fact": "Lake sturgeon grow so slowly that a 6 ft fish may be 80–100 years old. They were once so abundant in the Great Lakes that steamboats burned dried sturgeon as fuel.",
+    "name_fr": "esturgeon jaune",
+    "name_en": "Lake Sturgeon"
   },
   {
     "species": "brook_trout",
@@ -367,7 +393,9 @@
     "max_size_cm": 86,
     "conservation_status": "Least Concern",
     "description": "Quebec's most iconic native trout, the omble de fontaine is prized for its vivid red spots ringed with blue halos and brilliant orange belly fins. A symbol of pristine cold-water wilderness.",
-    "fun_fact": "The brook trout is Quebec's official fish emblem and a keystone indicator of healthy cold-water ecosystems."
+    "fun_fact": "The brook trout is Quebec's official fish emblem and a keystone indicator of healthy cold-water ecosystems.",
+    "name_fr": "omble de fontaine",
+    "name_en": "Brook Char"
   },
   {
     "species": "lake_trout",
@@ -377,7 +405,9 @@
     "max_size_cm": 120,
     "conservation_status": "Least Concern",
     "description": "The largest of the chars, the touladi inhabits Quebec's deepest lakes year-round. Prized trophy fish with a grey-green body covered in pale spots and a deeply forked tail.",
-    "fun_fact": "Lake trout can live over 60 years and descend to depths of 200 metres in summer to find cold water."
+    "fun_fact": "Lake trout can live over 60 years and descend to depths of 200 metres in summer to find cold water.",
+    "name_fr": "touladi",
+    "name_en": "Lake Trout"
   },
   {
     "species": "muskellunge",
@@ -387,6 +417,722 @@
     "max_size_cm": 180,
     "conservation_status": "Least Concern",
     "description": "The apex freshwater predator of Quebec waters. The maskinongé is the ultimate trophy for sport anglers — known as the fish of ten thousand casts.",
-    "fun_fact": "Muskellunge can strike prey up to one-third their own body length and are capable of explosive bursts exceeding 50 km/h."
+    "fun_fact": "Muskellunge can strike prey up to one-third their own body length and are capable of explosive bursts exceeding 50 km/h.",
+    "name_fr": "maskinongé",
+    "name_en": "Muskellunge"
+  },
+  {
+    "species": "gizzard_shad",
+    "scientific_name": "Dorosoma cepedianum",
+    "name_fr": "alose à gésier",
+    "name_en": "Gizzard Shad",
+    "family": "Clupeidae"
+  },
+  {
+    "species": "blueback_herring",
+    "scientific_name": "Alosa aestivalis",
+    "name_fr": "alose d'été",
+    "name_en": "Blueback Herring",
+    "family": "Clupeidae"
+  },
+  {
+    "species": "american_eel",
+    "scientific_name": "Anguilla rostrata",
+    "name_fr": "anguille d'Amérique",
+    "name_en": "American Eel",
+    "family": "Anguillidae"
+  },
+  {
+    "species": "white_bass",
+    "scientific_name": "Morone chrysops",
+    "name_fr": "bar blanc",
+    "name_en": "White Bass",
+    "family": "Moronidae"
+  },
+  {
+    "species": "striped_bass",
+    "scientific_name": "Morone saxatilis",
+    "name_fr": "bar rayé",
+    "name_en": "Striped Bass",
+    "family": "Moronidae"
+  },
+  {
+    "species": "brown_bullhead",
+    "scientific_name": "Ameiurus nebulosus",
+    "name_fr": "barbotte brune",
+    "name_en": "Brown Bullhead",
+    "family": "Ictaluridae"
+  },
+  {
+    "species": "yellow_bullhead",
+    "scientific_name": "Ameiurus natalis",
+    "name_fr": "barbotte jaune",
+    "name_en": "Yellow Bullhead",
+    "family": "Ictaluridae"
+  },
+  {
+    "species": "white_perch",
+    "scientific_name": "Morone americana",
+    "name_fr": "baret",
+    "name_en": "White Perch",
+    "family": "Moronidae"
+  },
+  {
+    "species": "redfin_pickerel",
+    "scientific_name": "Esox americanus americanus",
+    "name_fr": "brochet d'Amérique",
+    "name_en": "Redfin Pickerel",
+    "family": "Esocidae"
+  },
+  {
+    "species": "chain_pickerel",
+    "scientific_name": "Esox niger",
+    "name_fr": "brochet maillé",
+    "name_en": "Chain Pickerel",
+    "family": "Esocidae"
+  },
+  {
+    "species": "grass_pickerel",
+    "scientific_name": "Esox americanus vermiculatus",
+    "name_fr": "brochet vermiculé",
+    "name_en": "Grass Pickerel",
+    "family": "Esocidae"
+  },
+  {
+    "species": "grass_carp",
+    "scientific_name": "Ctenopharyngodon idella",
+    "name_fr": "carpe de roseau",
+    "name_en": "Grass Carp",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "fourhorn_sculpin",
+    "scientific_name": "Myoxocephalus quadricornis",
+    "name_fr": "chaboisseau à quatre cornes",
+    "name_en": "Fourhorn Sculpin",
+    "family": "Cottidae"
+  },
+  {
+    "species": "spoonhead_sculpin",
+    "scientific_name": "Cottus ricei",
+    "name_fr": "chabot à tête plate",
+    "name_en": "Spoonhead Sculpin",
+    "family": "Cottidae"
+  },
+  {
+    "species": "deepwater_sculpin",
+    "scientific_name": "Myoxocephalus thompsonii",
+    "name_fr": "chabot de profondeur",
+    "name_en": "Deepwater Sculpin",
+    "family": "Cottidae"
+  },
+  {
+    "species": "mottled_sculpin",
+    "scientific_name": "Cottus bairdii",
+    "name_fr": "chabot tacheté",
+    "name_en": "Mottled Sculpin",
+    "family": "Cottidae"
+  },
+  {
+    "species": "slimy_sculpin",
+    "scientific_name": "Cottus cognatus",
+    "name_fr": "chabot visqueux",
+    "name_en": "Slimy Sculpin",
+    "family": "Cottidae"
+  },
+  {
+    "species": "tadpole_madtom",
+    "scientific_name": "Noturus gyrinus",
+    "name_fr": "chat-fou brun",
+    "name_en": "Tadpole Madtom",
+    "family": "Ictaluridae"
+  },
+  {
+    "species": "stonecat",
+    "scientific_name": "Noturus flavus",
+    "name_fr": "chat-fou des rapides",
+    "name_en": "Stonecat",
+    "family": "Ictaluridae"
+  },
+  {
+    "species": "margined_madtom",
+    "scientific_name": "Noturus insignis",
+    "name_fr": "chat-fou liséré",
+    "name_en": "Margined Madtom",
+    "family": "Ictaluridae"
+  },
+  {
+    "species": "silver_redhorse",
+    "scientific_name": "Moxostoma anisurum",
+    "name_fr": "chevalier blanc",
+    "name_en": "Silver Redhorse",
+    "family": "Catostomidae"
+  },
+  {
+    "species": "copper_redhorse",
+    "scientific_name": "Moxostoma hubbsi",
+    "name_fr": "chevalier cuivré",
+    "name_en": "Copper Redhorse",
+    "family": "Catostomidae"
+  },
+  {
+    "species": "river_redhorse",
+    "scientific_name": "Moxostoma carinatum",
+    "name_fr": "chevalier de rivière",
+    "name_en": "River Redhorse",
+    "family": "Catostomidae"
+  },
+  {
+    "species": "greater_redhorse",
+    "scientific_name": "Moxostoma valenciennesi",
+    "name_fr": "chevalier jaune",
+    "name_en": "Greater Redhorse",
+    "family": "Catostomidae"
+  },
+  {
+    "species": "shorthead_redhorse",
+    "scientific_name": "Moxostoma macrolepidotum",
+    "name_fr": "chevalier rouge",
+    "name_en": "Shorthead Redhorse",
+    "family": "Catostomidae"
+  },
+  {
+    "species": "mummichog",
+    "scientific_name": "Fundulus heteroclitus",
+    "name_fr": "choquemort",
+    "name_en": "Mummichog",
+    "family": "Fundulidae"
+  },
+  {
+    "species": "lake_cisco",
+    "scientific_name": "Coregonus artedi",
+    "name_fr": "cisco de lac",
+    "name_en": "Lake Cisco",
+    "family": "Salmonidae"
+  },
+  {
+    "species": "quillback",
+    "scientific_name": "Carpiodes cyprinus",
+    "name_fr": "couette",
+    "name_en": "Quillback",
+    "family": "Catostomidae"
+  },
+  {
+    "species": "bluegill",
+    "scientific_name": "Lepomis macrochirus",
+    "name_fr": "crapet arlequin",
+    "name_en": "Bluegill",
+    "family": "Centrarchidae"
+  },
+  {
+    "species": "rock_bass",
+    "scientific_name": "Ambloplites rupestris",
+    "name_fr": "crapet de roche",
+    "name_en": "Rock Bass",
+    "family": "Centrarchidae"
+  },
+  {
+    "species": "northern_sunfish",
+    "scientific_name": "Lepomis peltastes",
+    "name_fr": "crapet du Nord",
+    "name_en": "Northern Sunfish",
+    "family": "Centrarchidae"
+  },
+  {
+    "species": "green_sunfish",
+    "scientific_name": "Lepomis cyanellus",
+    "name_fr": "crapet vert",
+    "name_en": "Green sunfish",
+    "family": "Centrarchidae"
+  },
+  {
+    "species": "pumpkinseed",
+    "scientific_name": "Lepomis gibbosus",
+    "name_fr": "crapet-soleil",
+    "name_en": "Pumpkinseed",
+    "family": "Centrarchidae"
+  },
+  {
+    "species": "brook_silverside",
+    "scientific_name": "Labidesthes sicculus",
+    "name_fr": "crayon d'argent",
+    "name_en": "Brook Silverside",
+    "family": "Atherinopsidae"
+  },
+  {
+    "species": "iowa_darter",
+    "scientific_name": "Etheostoma exile",
+    "name_fr": "dard à ventre jaune",
+    "name_en": "Iowa Darter",
+    "family": "Percidae"
+  },
+  {
+    "species": "fantail_darter",
+    "scientific_name": "Etheostoma flabellare",
+    "name_fr": "dard barré",
+    "name_en": "Fantail Darter",
+    "family": "Percidae"
+  },
+  {
+    "species": "eastern_sand_darter",
+    "scientific_name": "Ammocrypta pellucida",
+    "name_fr": "dard de sable",
+    "name_en": "Eastern Sand Darter",
+    "family": "Percidae"
+  },
+  {
+    "species": "sauger",
+    "scientific_name": "Sander canadensis",
+    "name_fr": "doré noir",
+    "name_en": "Sauger",
+    "family": "Percidae"
+  },
+  {
+    "species": "rainbow_smelt",
+    "scientific_name": "Osmerus mordax",
+    "name_fr": "éperlan arc-en-ciel",
+    "name_en": "Rainbow Smelt",
+    "family": "Osmeridae"
+  },
+  {
+    "species": "brook_stickleback",
+    "scientific_name": "Culaea inconstans",
+    "name_fr": "épinoche à cinq épines",
+    "name_en": "Brook Stickleback",
+    "family": "Gasterosteidae"
+  },
+  {
+    "species": "ninespine_stickleback",
+    "scientific_name": "Pungitius pungitius",
+    "name_fr": "épinoche à neuf épines",
+    "name_en": "Ninespine Stickleback",
+    "family": "Gasterosteidae"
+  },
+  {
+    "species": "fourspine_stickleback",
+    "scientific_name": "Apeltes quadracus",
+    "name_fr": "épinoche à quatre épines",
+    "name_en": "Fourspine Stickleback",
+    "family": "Gasterosteidae"
+  },
+  {
+    "species": "threespine_stickleback",
+    "scientific_name": "Gasterosteus aculeatus",
+    "name_fr": "épinoche à trois épines",
+    "name_en": "Threespine Stickleback",
+    "family": "Gasterosteidae"
+  },
+  {
+    "species": "blackspotted_stickleback",
+    "scientific_name": "Gasterosteus wheatlandi",
+    "name_fr": "épinoche tachetée",
+    "name_en": "Blackspotted Stickleback",
+    "family": "Gasterosteidae"
+  },
+  {
+    "species": "atlantic_sturgeon",
+    "scientific_name": "Acipenser oxyrinchus",
+    "name_fr": "esturgeon noir",
+    "name_en": "Atlantic Sturgeon",
+    "family": "Acipenseridae"
+  },
+  {
+    "species": "banded_killifish",
+    "scientific_name": "Fundulus diaphanus",
+    "name_fr": "fondule barré",
+    "name_en": "Banded Killifish",
+    "family": "Fundulidae"
+  },
+  {
+    "species": "channel_darter",
+    "scientific_name": "Percina copelandi",
+    "name_fr": "fouille-roche gris",
+    "name_en": "Channel Darter",
+    "family": "Percidae"
+  },
+  {
+    "species": "logperch",
+    "scientific_name": "Percina caprodes",
+    "name_fr": "fouille-roche zébré",
+    "name_en": "Logperch",
+    "family": "Percidae"
+  },
+  {
+    "species": "rudd",
+    "scientific_name": "Scardinius erythrophthalmus",
+    "name_fr": "Gardon rouge",
+    "name_en": "Rudd",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "alewife",
+    "scientific_name": "Alosa pseudoharengus",
+    "name_fr": "gaspareau",
+    "name_en": "Alewife",
+    "family": "Clupeidae"
+  },
+  {
+    "species": "round_goby",
+    "scientific_name": "Neogobius melanostomus",
+    "name_fr": "gobie à taches noires",
+    "name_en": "Round Goby",
+    "family": "Gobiidae"
+  },
+  {
+    "species": "lake_whitefish",
+    "scientific_name": "Coregonus clupeaformis",
+    "name_fr": "grand corégone",
+    "name_en": "Lake Whitefish",
+    "family": "Salmonidae"
+  },
+  {
+    "species": "silver_lamprey",
+    "scientific_name": "Ichthyomyzon unicuspis",
+    "name_fr": "lamproie argentée",
+    "name_en": "Silver Lamprey",
+    "family": "Petromyzontidae"
+  },
+  {
+    "species": "chestnut_lamprey",
+    "scientific_name": "Ichthyomyzon castaneus",
+    "name_fr": "lamproie brune",
+    "name_en": "Chestnut Lamprey",
+    "family": "Petromyzontidae"
+  },
+  {
+    "species": "american_brook_lamprey",
+    "scientific_name": "Lethenteron appendix",
+    "name_fr": "lamproie de l'Est",
+    "name_en": "American Brook Lamprey",
+    "family": "Petromyzontidae"
+  },
+  {
+    "species": "northern_brook_lamprey",
+    "scientific_name": "Ichthyomyzon fossor",
+    "name_fr": "lamproie du Nord",
+    "name_en": "Northern Brook Lamprey",
+    "family": "Petromyzontidae"
+  },
+  {
+    "species": "sea_lamprey",
+    "scientific_name": "Petromyzon marinus",
+    "name_fr": "lamproie marine",
+    "name_en": "Sea Lamprey",
+    "family": "Petromyzontidae"
+  },
+  {
+    "species": "mooneye",
+    "scientific_name": "Hiodon tergisus",
+    "name_fr": "laquaiche argentée",
+    "name_en": "Mooneye",
+    "family": "Hiodontidae"
+  },
+  {
+    "species": "goldeye",
+    "scientific_name": "Hiodon alosoides",
+    "name_fr": "laquaiche aux yeux d'or",
+    "name_en": "Goldeye",
+    "family": "Hiodontidae"
+  },
+  {
+    "species": "longnose_gar",
+    "scientific_name": "Lepisosteus osseus",
+    "name_fr": "lépisosté osseux",
+    "name_en": "Longnose Gar",
+    "family": "Lepisosteidae"
+  },
+  {
+    "species": "burbot",
+    "scientific_name": "Lota lota",
+    "name_fr": "lotte",
+    "name_en": "Burbot",
+    "family": "Lotidae"
+  },
+  {
+    "species": "freshwater_drum",
+    "scientific_name": "Aplodinotus grunniens",
+    "name_fr": "malachigan",
+    "name_en": "Freshwater Drum",
+    "family": "Sciaenidae"
+  },
+  {
+    "species": "fathead_minnow",
+    "scientific_name": "Pimephales promelas",
+    "name_fr": "méné à grosse tête",
+    "name_en": "Fathead Minnow",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "blackchin_shiner",
+    "scientific_name": "Notropis heterodon",
+    "name_fr": "méné à menton noir",
+    "name_en": "Blackchin Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "bluntnose_minnow",
+    "scientific_name": "Pimephales notatus",
+    "name_fr": "méné à museau arrondi",
+    "name_en": "Bluntnose Minnow",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "blacknose_shiner",
+    "scientific_name": "Notropis heterolepis",
+    "name_fr": "méné à museau noir",
+    "name_en": "Blacknose Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "common_shiner",
+    "scientific_name": "Luxilus cornutus",
+    "name_fr": "méné à nageoires rouges",
+    "name_en": "Common Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "spottail_shiner",
+    "scientific_name": "Notropis hudsonius",
+    "name_fr": "méné à tache noire",
+    "name_en": "Spottail Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "cutlip_minnow",
+    "scientific_name": "Exoglossum maxillingua",
+    "name_fr": "méné bec-de-lièvre",
+    "name_en": "Cutlip Minnow",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "spotfin_shiner",
+    "scientific_name": "Cyprinella spiloptera",
+    "name_fr": "méné bleu",
+    "name_en": "Spotfin Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "eastern_silvery_minnow",
+    "scientific_name": "Hybognathus regius",
+    "name_fr": "méné d'argent de l'Est",
+    "name_en": "Eastern Silvery Minnow",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "bridle_shiner",
+    "scientific_name": "Notropis bifrenatus",
+    "name_fr": "méné d'herbe",
+    "name_en": "Bridle Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "emerald_shiner",
+    "scientific_name": "Notropis atherinoides",
+    "name_fr": "méné émeraude",
+    "name_en": "Emerald Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "golden_shiner",
+    "scientific_name": "Notemigonus crysoleucas",
+    "name_fr": "méné jaune",
+    "name_en": "Golden Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "brassy_minnow",
+    "scientific_name": "Hybognathus hankinsoni",
+    "name_fr": "méné laiton",
+    "name_en": "Brassy Minnow",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "sand_shiner",
+    "scientific_name": "Notropis stramineus",
+    "name_fr": "méné paille",
+    "name_en": "Sand Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "mimic_shiner",
+    "scientific_name": "Notropis volucellus",
+    "name_fr": "méné pâle",
+    "name_en": "Mimic Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "finescale_dace",
+    "scientific_name": "Chrosomus neogaeus",
+    "name_fr": "méné ventre citron",
+    "name_en": "Finescale Dace",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "northern_redbelly_dace",
+    "scientific_name": "Chrosomus eos",
+    "name_fr": "méné ventre rouge du Nord",
+    "name_en": "Northern Redbelly Dace",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "round_whitefish",
+    "scientific_name": "Prosopium cylindraceum",
+    "name_fr": "ménomini rond",
+    "name_en": "Round Whitefish",
+    "family": "Salmonidae"
+  },
+  {
+    "species": "white_sucker",
+    "scientific_name": "Catostomus commersonii",
+    "name_fr": "meunier noir",
+    "name_en": "White Sucker",
+    "family": "Catostomidae"
+  },
+  {
+    "species": "longnose_sucker",
+    "scientific_name": "Catostomus catostomus",
+    "name_fr": "meunier rouge",
+    "name_en": "Longnose Sucker",
+    "family": "Catostomidae"
+  },
+  {
+    "species": "creek_chub",
+    "scientific_name": "Semotilus atromaculatus",
+    "name_fr": "mulet à cornes",
+    "name_en": "Creek Chub",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "lake_chub",
+    "scientific_name": "Couesius plumbeus",
+    "name_fr": "mulet de lac",
+    "name_en": "Lake Chub",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "northern_pearl_dace",
+    "scientific_name": "Margariscus margarita",
+    "name_fr": "mulet perlé",
+    "name_en": "Northern Pearl Dace",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "longnose_dace",
+    "scientific_name": "Rhinichthys cataractae",
+    "name_fr": "naseux des rapides",
+    "name_en": "Longnose Dace",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "blacknose_dace",
+    "scientific_name": "Rhinichthys atratulus",
+    "name_fr": "naseux noir de l'Est",
+    "name_en": "Blacknose Dace",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "arctic_char",
+    "scientific_name": "Salvelinus alpinus",
+    "name_fr": "omble chevalier",
+    "name_en": "Arctic Char",
+    "family": "Salmonidae"
+  },
+  {
+    "species": "trout_perch",
+    "scientific_name": "Percopsis omiscomaycus",
+    "name_fr": "omisco",
+    "name_en": "Trout-perch",
+    "family": "Percopsidae"
+  },
+  {
+    "species": "fallfish",
+    "scientific_name": "Semotilus corporalis",
+    "name_fr": "ouitouche",
+    "name_en": "Fallfish",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "goldfish",
+    "scientific_name": "Carassius auratus",
+    "name_fr": "poisson rouge",
+    "name_en": "Goldfish",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "bowfin",
+    "scientific_name": "Amia calva",
+    "name_fr": "poisson-castor",
+    "name_en": "Bowfin",
+    "family": "Amiidae"
+  },
+  {
+    "species": "atlantic_tomcod",
+    "scientific_name": "Microgadus tomcod",
+    "name_fr": "poulamon atlantique",
+    "name_en": "Atlantic Tomcod",
+    "family": "Gadidae"
+  },
+  {
+    "species": "tessellated_darter",
+    "scientific_name": "Etheostoma olmstedi",
+    "name_fr": "raseux-de-terre gris",
+    "name_en": "Tessellated Darter",
+    "family": "Percidae"
+  },
+  {
+    "species": "johnny_darter",
+    "scientific_name": "Etheostoma nigrum",
+    "name_fr": "raseux-de-terre noir",
+    "name_en": "Johnny Darter",
+    "family": "Percidae"
+  },
+  {
+    "species": "chinook_salmon",
+    "scientific_name": "Oncorhynchus tshawytscha",
+    "name_fr": "saumon chinook",
+    "name_en": "Chinook Salmon",
+    "family": "Salmonidae"
+  },
+  {
+    "species": "coho_salmon",
+    "scientific_name": "Oncorhynchus kisutch",
+    "name_fr": "saumon coho",
+    "name_en": "Coho Salmon",
+    "family": "Salmonidae"
+  },
+  {
+    "species": "tench",
+    "scientific_name": "Tinca tinca",
+    "name_fr": "tanche",
+    "name_en": "Tench",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "rosyface_shiner",
+    "scientific_name": "Notropis rubellus",
+    "name_fr": "tête rose",
+    "name_en": "Rosyface Shiner",
+    "family": "Cyprinidae"
+  },
+  {
+    "species": "brown_trout",
+    "scientific_name": "Salmo trutta",
+    "name_fr": "truite brune",
+    "name_en": "Brown Trout",
+    "family": "Salmonidae"
+  },
+  {
+    "species": "cutthroat_trout",
+    "scientific_name": "Oncorhynchus clarkii",
+    "name_fr": "truite fardée",
+    "name_en": "Cutthroat Trout",
+    "family": "Salmonidae"
+  },
+  {
+    "species": "central_mudminnow",
+    "scientific_name": "Umbra limi",
+    "name_fr": "umbre de vase",
+    "name_en": "Central Mudminnow",
+    "family": "Umbridae"
   }
 ]

@@ -36,13 +36,15 @@ def evaluate(config_path: str = "configs/training.yaml", checkpoint: str = "chec
             all_labels.extend(labels.numpy())
 
     all_preds, all_labels = np.array(all_preds), np.array(all_labels)
-    print(classification_report(all_labels, all_preds, target_names=classes, zero_division=0))
+    print(classification_report(
+        all_labels, all_preds, labels=range(len(classes)), target_names=classes, zero_division=0
+    ))
 
     out_dir = Path(config["paths"]["outputs"])
     out_dir.mkdir(parents=True, exist_ok=True)
 
     n = len(classes)
-    cm = confusion_matrix(all_labels, all_preds)
+    cm = confusion_matrix(all_labels, all_preds, labels=range(len(classes)))
     fig, ax = plt.subplots(figsize=(max(10, n // 2), max(8, n // 2)))
     sns.heatmap(cm, annot=n <= 30, fmt="d", xticklabels=classes, yticklabels=classes, ax=ax, cmap="Blues")
     ax.set_xlabel("Predicted")

@@ -28,9 +28,9 @@ python research/scripts/download_data.py download crowww/a-large-scale-fish-data
 python research/scripts/download_data.py organize data/kaggle_tmp --output data/raw
 python research/scripts/download_data.py stats
 
-# North American freshwater species (iNaturalist, no auth needed)
-make download-na-freshwater                    # 400 images × 8 species
-make download-na-freshwater COUNT=600          # custom count
+# Quebec freshwater/migratory species — all 118 per the MFFP atlas (iNaturalist, no auth needed)
+make download-qc-freshwater                    # 400 images × 118 species
+make download-qc-freshwater COUNT=600          # custom count
 # Single species:
 python research/scripts/download_data.py inaturalist \
     --taxon "Micropterus salmoides" --label largemouth_bass --count 400

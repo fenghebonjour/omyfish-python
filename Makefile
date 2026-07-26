@@ -1,4 +1,4 @@
-.PHONY: install train resume eval app api predict test clean db compose-up compose-down download-na-freshwater
+.PHONY: install train resume eval app api predict test clean db compose-up compose-down download-qc-freshwater
 
 install:
 	venv/bin/pip install -r requirements.txt
@@ -33,8 +33,8 @@ compose-up:
 compose-down:
 	docker compose -f infrastructure/docker/docker-compose.yml down
 
-download-na-freshwater:
-	venv/bin/python research/scripts/download_data.py download-na-freshwater --count $(or $(COUNT),400)
+download-qc-freshwater:
+	venv/bin/python research/scripts/download_data.py download-qc-freshwater --count $(or $(COUNT),400)
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} +

@@ -115,8 +115,8 @@ The training pipeline supports EfficientNet-B3, ResNet-50, and ViT. All hyperpar
 python research/scripts/download_data.py download crowww/a-large-scale-fish-dataset
 python research/scripts/download_data.py organize data/kaggle_tmp --output data/raw
 
-# Download North American freshwater species from iNaturalist
-make download-na-freshwater
+# Download all 118 Quebec freshwater/migratory species from iNaturalist
+make download-qc-freshwater
 
 # 2. Train
 make train                    # saves checkpoints/best.pt + classes.json

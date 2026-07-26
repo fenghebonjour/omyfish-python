@@ -1,3 +1,4 @@
+from collections import Counter
 from pathlib import Path
 from typing import List, Tuple
 
@@ -43,9 +44,21 @@ class FishDataset(Dataset):
             self.class_to_idx = {c: i for i, c in enumerate(self.classes)}
             all_samples = self._scan(root)
             labels = [s[1] for s in all_samples]
-            train_s, val_s = train_test_split(
-                all_samples, test_size=val_ratio, random_state=seed, stratify=labels
-            )
+
+            # Classes with fewer than 2 samples can't be stratified; keep them in train only.
+            counts = Counter(labels)
+            stratifiable = [s for s in all_samples if counts[s[1]] >= 2]
+            unsplittable = [s for s in all_samples if counts[s[1]] < 2]
+
+            if stratifiable:
+                train_s, val_s = train_test_split(
+                    stratifiable, test_size=val_ratio, random_state=seed,
+                    stratify=[s[1] for s in stratifiable],
+                )
+            else:
+                train_s, val_s = [], []
+            train_s = train_s + unsplittable
+
             self.samples = train_s if split == "train" else val_s
 
     def _scan(self, directory: Path) -> List[Tuple[Path, int]]:

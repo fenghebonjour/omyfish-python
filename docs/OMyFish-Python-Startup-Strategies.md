@@ -171,9 +171,9 @@ One folder per species: data/raw/<species_name>/*.jpg. Two data source options b
 
 > **python research/scripts/download_data.py download crowww/a-large-scale-fish-dataset python research/scripts/download_data.py organize data/kaggle_tmp --output data/raw**
 
-### Option B: download North American freshwater species from iNaturalist
+### Option B: download all 118 Quebec freshwater/migratory species from iNaturalist
 
-> **make download-na-freshwater**
+> **make download-qc-freshwater**
 
 ### Configure hyperparameters
 All settings live in configs/training.yaml -- model architecture (EfficientNet-B3, ResNet-50, or ViT), epochs, learning rate, batch size.

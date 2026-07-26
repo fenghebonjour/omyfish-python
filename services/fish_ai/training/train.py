@@ -123,6 +123,8 @@ def train(config_path: str = "configs/training.yaml", resume: str = None):
         tr_loss, tr_acc, _ = _run_epoch(model, train_loader, criterion, device, optimizer, scaler)
         vl_loss, vl_acc, vl_top5 = _run_epoch(model, val_loader, criterion, device)
         scheduler.step()
+        if device == "cuda":
+            torch.cuda.empty_cache()
 
         print(
             f"[{epoch:03d}] train loss={tr_loss:.4f} acc={tr_acc:.3f} | "
