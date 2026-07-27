@@ -41,10 +41,13 @@ idx.write_text(content.replace('</head>', css + '</head>', 1))"
 ADD https://github.com/fenghebonjour/omyfish-ai/archive/refs/heads/main.tar.gz /tmp/omyfish-ai.tar.gz
 RUN mkdir /ai && tar -xzf /tmp/omyfish-ai.tar.gz -C /ai --strip-components=1 \
     && rm /tmp/omyfish-ai.tar.gz \
-    && pip install --no-cache-dir "httpx>=0.27.0" "ephem>=4.1.0"
+    && pip install --no-cache-dir "httpx>=0.27.0" "ephem>=4.1.0" "beautifulsoup4>=4.12.0" "groq>=0.11.0"
 
 # Timing tab talks to the bundled service; fish-ID stays in-process via
 # Streamlit's own predictors, so the bundled copy skips its model loading.
+# NOTE: this pip install list must track omyfish-ai's module-level imports
+# (bs4/groq/httpx/ephem etc.) — a missing one crashes the bundled uvicorn
+# process silently at import time, and only Streamlit comes up on 7860.
 ENV BITE_SERVICE_URL=http://127.0.0.1:8000 \
     DISABLE_FISH_ID=1
 
