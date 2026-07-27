@@ -142,6 +142,51 @@ def test_identify_fish_saves_observation_with_manual_coords(client):
     assert rows[0]["source"] == "upload"
 
 
+def test_identify_fish_with_coords_folds_in_regs_data(client, monkeypatch):
+    import apps.omyfish_api.routes.species as species_route
+
+    def fake_get(url, params=None, timeout=None):
+        class FakeResp:
+            status_code = 200
+
+            def json(self):
+                if "limits" in url:
+                    return {"zone_name": "Zone 27", "rules": [{"species": "Walleye", "catch_limit": "6 in all"}]}
+                return {"species": "Walleye", "meals_per_month": 8, "station_name": "Lac Saint-Charles"}
+        return FakeResp()
+
+    monkeypatch.setattr(species_route.requests, "get", fake_get)
+
+    r = client.post(
+        "/identify-fish",
+        files=_png_upload(),
+        data={"latitude": "46.8", "longitude": "-71.2"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["legal_limit"]["zone_name"] == "Zone 27"
+    assert body["consumption_advice"]["meals_per_month"] == 8
+
+
+def test_identify_fish_regs_service_down_degrades_gracefully(client, monkeypatch):
+    import apps.omyfish_api.routes.species as species_route
+
+    def fake_get(url, params=None, timeout=None):
+        raise species_route.requests.RequestException("connection refused")
+
+    monkeypatch.setattr(species_route.requests, "get", fake_get)
+
+    r = client.post(
+        "/identify-fish",
+        files=_png_upload(),
+        data={"latitude": "46.8", "longitude": "-71.2"},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert "legal_limit" not in body
+    assert "consumption_advice" not in body
+
+
 def test_identify_fish_without_coords_does_not_save(client):
     r = client.post("/identify-fish", files=_png_upload(), data={"save": "true"})
     assert r.status_code == 200

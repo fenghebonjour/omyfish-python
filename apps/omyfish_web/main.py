@@ -202,6 +202,34 @@ def save_observation_form(result, image):
     with col2:
         lon = st.number_input("Longitude", value=float(exif_coords[1]) if exif_coords else 0.0, format="%.6f", step=0.0001)
 
+    if lat != 0.0 or lon != 0.0:
+        from apps.omyfish_web.regs_client import fetch_consumption, fetch_limits
+
+        top = result["predictions"][0]
+        meta = top.get("metadata") or {}
+        species_query = meta.get("species") or top["species"].replace("_", " ")
+
+        limits = fetch_limits(lat, lon, species_query)
+        consumption = fetch_consumption(lat, lon, species_query)
+
+        if limits or consumption:
+            rc1, rc2 = st.columns(2)
+            with rc1:
+                if limits and limits["rules"]:
+                    rule = limits["rules"][0]
+                    st.metric("Daily/possession limit", rule["catch_limit"], help=f"{limits['zone_name']} — {rule['period']}")
+                    if rule.get("length_limit"):
+                        st.caption(f"Length: {rule['length_limit']}")
+                else:
+                    st.caption("No legal-limit data found for this species/location.")
+            with rc2:
+                if consumption and consumption.get("meals_per_month") is not None:
+                    st.metric("Safe to eat", f"{consumption['meals_per_month']} meals/month",
+                               help=f"Nearest sampled site: {consumption['station_name']} ({consumption['distance_km']} km)")
+                else:
+                    st.caption("No consumption-advisory data found for this species/location.")
+            st.caption("⚠️ Informational only — verify current regulations at quebec.ca before fishing or eating your catch.")
+
     auth_user = st.session_state.get("auth_user")
     if not auth_user:
         st.info("Log in to save observations.")
@@ -237,13 +265,13 @@ st.title("🐟 OMyFish")
 
 _is_admin = (st.session_state.get("auth_user") or {}).get("role") == "admin"
 if _is_admin:
-    tab_timing, tab_identify, tab_map, tab_admin = st.tabs(
-        ["Timing", "Identify", "Map", "Admin"])
+    tab_timing, tab_identify, tab_map, tab_regs, tab_admin = st.tabs(
+        ["Timing", "Identify", "Map", "Regs & Tips", "Admin"])
     with tab_admin:
         from apps.omyfish_web.admin import render_admin
         render_admin()
 else:
-    tab_timing, tab_identify, tab_map = st.tabs(["Timing", "Identify", "Map"])
+    tab_timing, tab_identify, tab_map, tab_regs = st.tabs(["Timing", "Identify", "Map", "Regs & Tips"])
 
 # ── Timing tab ────────────────────────────────────────────────────────────────
 
@@ -354,3 +382,10 @@ with tab_map:
             st.info("Install `folium` and `streamlit-folium` to enable the map view.")
         except Exception as e:
             st.error(f"Map error: {e}")
+
+# ── Regs & Tips tab ───────────────────────────────────────────────────────────
+
+with tab_regs:
+    from apps.omyfish_web.regs import render_regs_tab
+
+    render_regs_tab()

@@ -1,15 +1,46 @@
 import io
 from typing import Optional
 
+import requests
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from PIL import Image
 
 from apps.omyfish_api.dependencies import get_ai_service, get_gis_service, get_obs_repo
+from shared.config import settings
 from shared.schemas.observation import ObservationCreate
 
 router = APIRouter()
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+REGS_TIMEOUT_SECONDS = 5
+
+
+def _fetch_regs(lat: float, lon: float, species: str) -> dict:
+    """Best-effort call to the shared omyfish-ai regs_advisor endpoints.
+    Additive enrichment only — any failure (service down, no data for this
+    species/location) must not break the identify_fish response."""
+    regs: dict = {}
+    try:
+        resp = requests.get(
+            f"{settings.bite_service_url}/regs/limits",
+            params={"lat": lat, "lon": lon, "species": species},
+            timeout=REGS_TIMEOUT_SECONDS,
+        )
+        if resp.status_code == 200:
+            regs["legal_limit"] = resp.json()
+    except requests.RequestException:
+        pass
+    try:
+        resp = requests.get(
+            f"{settings.bite_service_url}/regs/consumption",
+            params={"lat": lat, "lon": lon, "species": species},
+            timeout=REGS_TIMEOUT_SECONDS,
+        )
+        if resp.status_code == 200:
+            regs["consumption_advice"] = resp.json()
+    except requests.RequestException:
+        pass
+    return regs
 
 
 def _open_image(data: bytes) -> Image.Image:
@@ -63,6 +94,11 @@ async def identify_fish(
 
     if coords:
         result["latitude"], result["longitude"] = coords
+        if result["predictions"]:
+            top = result["predictions"][0]
+            meta = top.get("metadata") or {}
+            species_query = meta.get("species") or top["species"].replace("_", " ")
+            result.update(_fetch_regs(coords[0], coords[1], species_query))
 
     if save and coords and result["predictions"]:
         top = result["predictions"][0]
