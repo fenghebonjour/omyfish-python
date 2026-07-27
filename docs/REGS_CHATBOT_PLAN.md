@@ -88,21 +88,23 @@ Neither the zone polygons nor the numeric limits are in Données Québec or MFFP
 - New `apps/omyfish_web/regs.py` tab with a simple chat UI, calling the new endpoint.
 - Verify: a fixed set of Q&A test prompts (e.g. "what's the limit on walleye in zone 27", "can I eat a 45cm pike from Lac X", "best lure for smallmouth in July") checked for correct tool-routing and no hallucinated numbers when the structured source is authoritative.
 
-**Phase 3 — Map tab integration**
-- Overlay the zone polygons found in Phase 0 on the existing Map tab; clicking a zone shows its limits table.
+**Phase 3 — Map tab integration — COMPLETE (2026-07-27)**
+- Overlay the zone polygons found in Phase 0 on the existing Map tab; clicking a zone shows its name + link to the official quebec.ca rules page for that zone (a live-scraped limits table embedded in a static Leaflet popup would mean re-scraping all 34 zones on every map render — the official-source link keeps this to one cached fetch, matching the pattern already used by the Identify cards).
 - Plot nearby consumption-advisory sites as markers, reusing the same data as `consumption.py`.
+- Built `GET /regs/zones/geojson` (in-process cached, zone polygons/names essentially never change) and `GET /regs/consumption/stations` (nearest-N sampling sites) in `omyfish-ai`'s `regs_advisor/router.py`; `StationOut` schema added. 5 new router tests (38 total in `omyfish-ai/tests/regs_advisor/`).
+- `apps/omyfish_web/regs_client.py::fetch_zones_geojson`/`fetch_consumption_stations` + Map tab in `apps/omyfish_web/main.py` render a `folium.GeoJson` zone overlay (tooltip + popup) and green station markers (near the average of the user's own observation coordinates), plus a disclaimer caption. Verified end-to-end against the live government endpoints (33 real zone polygons, real nearby stations near Quebec City) and visually in a headless-browser render of the actual folium map output — see the Phase 3 completion note in the linked memory for screenshots/verification detail.
 
-**Phase 4 — Maintenance**
-- QC regs republish ~annually (typically effective April 1) — add a checklist reminder to re-pull/re-verify the limits table each spring rather than letting it silently go stale.
-- Add a persistent disclaimer ("informational only — verify current regulations at quebec.ca") anywhere a limit or consumption number is shown, given this is safety/legal-adjacent content.
+**Phase 4 — Maintenance — COMPLETE (2026-07-27)**
+- QC regs republish ~annually (typically effective April 1) — added a maintenance-reminder docstring note directly above `ZONE_NAME_TO_ID` in `regs_advisor/engine/zones.py` to re-verify the zone table and limits-page HTML parsing each spring.
+- Persistent disclaimer ("informational only — verify current regulations at quebec.ca") audited across every surface that shows a limit/consumption number: Identify cards and the Regs & Tips chat tab already had one (Phase 1/2); the new Map tab overlay got one added in this pass. All three `regs_advisor` response schemas (`LimitsResponse`, `ConsumptionResponse`, `AskResponse`) also carry a `disclaimer` field for any future API consumer.
 
 ## What to build first
 
 1. ~~Phase 0 discovery~~ — done; both zone lookup and limits are confirmed live HTTP endpoints (see above).
 2. ~~Phase 1 structured backend + Identify auto-cards~~ — **done 2026-07-27.** `regs_advisor/` built in `omyfish-ai` (`engine/zones.py`, `engine/limits.py`, `engine/consumption.py`, `providers/*`, `router.py`, `schemas.py`), wired into `main.py`, `GET /regs/limits` and `GET /regs/consumption` live and tested end-to-end against the real government endpoints. 26 tests in `tests/regs_advisor/` (unit + router-level with mocked providers). `identify_fish` in `apps/omyfish_api/routes/species.py` now folds in `legal_limit`/`consumption_advice` when coords are present (additive, degrades gracefully if the AI service is unreachable). Streamlit Identify tab (`save_observation_form` in `apps/omyfish_web/main.py`) renders the two info cards + disclaimer via the new `apps/omyfish_web/regs_client.py`. Bug caught during testing and fixed: the original size-bucket picker could borrow a smaller size class's meal count when the fish's actual class wasn't sampled — fixed to never do that (contaminant levels rise with size per the source data's own caveat).
 3. ~~Phase 2 chat tab~~ — **done 2026-07-27.** `regs_advisor/engine/retrieval.py` (hand-rolled TF-IDF chunk retrieval over `knowledge_base/*.md` — chose this over sentence-transformers to avoid a new ML dependency + model download for a corpus this small; keyword overlap is a strong signal for domain terms like species names and zone numbers). Two curated KB files: `regulations_overview.md` (how zones/limits/consumption advisories work, in plain language, not verbatim legal text) and `species_tackle.md` (tackle/technique notes for ~12 common QC gamefish). `POST /regs/ask` (`providers/llm_client.py`, Claude API via the official `anthropic` SDK, model `claude-opus-5` by default — overridable via `REGS_CHAT_MODEL` env var — one non-streaming call per question, no agentic loop). New `apps/omyfish_web/regs.py` "Regs & Tips" chat tab wired into `main.py`'s tab bar, backed by `apps/omyfish_web/regs_client.py::fetch_ask`. 12 more tests added (33 total in `omyfish-ai/tests/regs_advisor/`) — retrieval ranking + router tests with the LLM call mocked (never hits the real API in CI). All 67 omyfish-python tests and all 33 omyfish-ai regs_advisor tests pass.
-4. **Phase 3 Map overlay** — not started. Depends on Phase 0's zone polygons regardless of sequencing.
-5. **Phase 4 Maintenance** — not started.
+4. ~~Phase 3 Map overlay~~ — **done 2026-07-27.** `GET /regs/zones/geojson` + `GET /regs/consumption/stations` in `omyfish-ai`; Map tab in `omyfish-python` overlays zone polygons and consumption-site markers.
+5. ~~Phase 4 Maintenance~~ — **done 2026-07-27.** Annual-reverification reminder added to `engine/zones.py`; disclaimer coverage confirmed on every surface.
 
 ## Phase 2 follow-ups (deliberately deferred, not forgotten)
 

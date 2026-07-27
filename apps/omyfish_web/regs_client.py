@@ -36,6 +36,31 @@ def fetch_ask(question: str) -> dict | None:
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
+def fetch_zones_geojson() -> dict | None:
+    try:
+        resp = requests.get(f"{settings.bite_service_url}/regs/zones/geojson", timeout=15)
+        if resp.status_code != 200:
+            return None
+        return resp.json()
+    except requests.RequestException:
+        return None
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def fetch_consumption_stations(lat: float, lon: float, limit: int = 15) -> list[dict] | None:
+    try:
+        resp = requests.get(
+            f"{settings.bite_service_url}/regs/consumption/stations",
+            params={"lat": lat, "lon": lon, "limit": limit}, timeout=10,
+        )
+        if resp.status_code != 200:
+            return None
+        return resp.json()
+    except requests.RequestException:
+        return None
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
 def fetch_consumption(lat: float, lon: float, species: str, size_cm: float | None = None) -> dict | None:
     params = {"lat": lat, "lon": lon, "species": species}
     if size_cm:

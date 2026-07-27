@@ -355,10 +355,35 @@ with tab_map:
             from apps.omyfish_api.db.engine import ensure_db
             from apps.omyfish_api.repositories.observation_repository import ObservationRepository
 
+            from apps.omyfish_web.regs_client import fetch_consumption_stations, fetch_zones_geojson
+
             ensure_db()
             rows = ObservationRepository().list(1000, user_id=_map_user["id"])
 
             m = folium.Map(location=[20, 0], zoom_start=2, tiles="CartoDB positron")
+
+            zones_geojson = fetch_zones_geojson()
+            if zones_geojson:
+                folium.GeoJson(
+                    zones_geojson,
+                    name="Quebec fishing zones",
+                    style_function=lambda _: {"color": "#2b6cb0", "weight": 1, "fillOpacity": 0.05},
+                    tooltip=folium.GeoJsonTooltip(fields=["NM_ENDRO_EN"], aliases=["Zone:"]),
+                    popup=folium.GeoJsonPopup(fields=["NM_ENDRO_EN", "VA_HYPRL_REGLE_EN"], aliases=["Zone", "Regulations"]),
+                ).add_to(m)
+
+            if rows:
+                avg_lat = sum(r["latitude"] for r in rows) / len(rows)
+                avg_lon = sum(r["longitude"] for r in rows) / len(rows)
+                stations = fetch_consumption_stations(avg_lat, avg_lon) or []
+                for s in stations:
+                    folium.Marker(
+                        location=[s["latitude"], s["longitude"]],
+                        popup=folium.Popup(f"<b>{s['hydronyme']}</b><br>Consumption-advisory sampling site<br>{s['distance_km']} km away", max_width=220),
+                        tooltip=s["hydronyme"],
+                        icon=folium.Icon(color="green", icon="tint"),
+                    ).add_to(m)
+
             for r in rows:
                 sci = f"<br><i>{r['scientific_name']}</i>" if r.get("scientific_name") else ""
                 ts = r.get("timestamp", "")
@@ -377,6 +402,8 @@ with tab_map:
 
             st_folium(m, width=None, height=550, returned_objects=[], key=f"map_{_map_user['id']}_{len(rows)}")
             st.caption(f"{len(rows)} observation{'s' if len(rows) != 1 else ''}")
+            if zones_geojson or rows:
+                st.caption("⚠️ Fishing zones and consumption-advisory sites are informational only — verify current regulations at quebec.ca before fishing or eating your catch.")
 
         except ImportError:
             st.info("Install `folium` and `streamlit-folium` to enable the map view.")
