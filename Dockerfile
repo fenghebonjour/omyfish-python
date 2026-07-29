@@ -38,7 +38,8 @@ idx.write_text(content.replace('</head>', css + '</head>', 1))"
 # HF requires PRO for new Docker Spaces, so the shared omyfish-ai service
 # (single source of the bite-score domain) is bundled into this Space's image
 # instead of getting its own Space. A rebuild refreshes it from GitHub main
-# (pulls in omyfish-ai@014e92d — simplified zone geometry, was stalling Map).
+# (pulls in omyfish-ai@6785f09 — simplified zone geometry + hard timeout
+# safety net on the zone-fetch calls, was stalling Map).
 ADD https://github.com/fenghebonjour/omyfish-ai/archive/refs/heads/main.tar.gz /tmp/omyfish-ai.tar.gz
 RUN mkdir /ai && tar -xzf /tmp/omyfish-ai.tar.gz -C /ai --strip-components=1 \
     && rm /tmp/omyfish-ai.tar.gz \
