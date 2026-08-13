@@ -16,22 +16,24 @@ license: mit
 **Live demo:** [huggingface.co/spaces/fenghebonjour/omyfish](https://huggingface.co/spaces/fenghebonjour/omyfish)
 
 > [!NOTE]
-> **Repo reorganization (July 2026):** this repository was previously named `omyfish` — the old link `github.com/fenghebonjour/omyfish` redirects here. The platform is now split into four repos: **omyfish-python** (this one), [omyfish-ai](https://github.com/fenghebonjour/omyfish-ai), [omyfish-java](https://github.com/fenghebonjour/omyfish-java), and [omyfish-dotnet](https://github.com/fenghebonjour/omyfish-dotnet). See [Project Family](#project-family) below.
+> **Repo reorganization (July 2026):** this repository was previously named `omyfish` — the old link `github.com/fenghebonjour/omyfish` redirects here. The platform is now split into six repos: **omyfish-python** (this one, now the AI training/origin repo), [omyfish-ai](https://github.com/fenghebonjour/omyfish-ai), [omyfish-java](https://github.com/fenghebonjour/omyfish-java), [omyfish-dotnet](https://github.com/fenghebonjour/omyfish-dotnet), and the two newest siblings, [omyfish-python-web](https://github.com/fenghebonjour/omyfish-python-web) (Django, public) and omyfish-ios (SwiftUI, private). See [Project Family](#project-family) below.
 
 ---
 
 ## Project Family
 
-This repo is the **AI-first Python origin** of the OMyFish platform. Two enterprise re-architectures are being developed in parallel:
+This repo is the **AI-first Python origin** of the OMyFish platform — kept in place to train and version the fish-ID model, not as an active enterprise rewrite. Four enterprise clients consume that model (via `omyfish-ai`) in parallel:
 
-| Repo | Stack | Architecture |
+| Repo | Stack | Role |
 |---|---|---|
-| **omyfish-python** (this) | Python 3.11 · PyTorch · FastAPI · Streamlit | Monolith → service-oriented |
-| [omyfish-dotnet](https://github.com/fenghebonjour/omyfish-dotnet) | .NET 10 · ASP.NET Core · EF Core · YARP | Clean Architecture + CQRS (MediatR) |
-| [omyfish-java](https://github.com/fenghebonjour/omyfish-java) | Java 21 · Spring Boot 3.x · Hibernate · Spring AMQP | Hexagonal Architecture + Event-Driven |
-| [omyfish-ai](https://github.com/fenghebonjour/omyfish-ai) | Python 3.11 · PyTorch · FastAPI | Standalone AI microservice — shared by all three |
+| **omyfish-python** (this) | Python 3.11 · PyTorch · FastAPI · Streamlit | AI training / origin — Streamlit demo |
+| [omyfish-ai](https://github.com/fenghebonjour/omyfish-ai) | Python 3.11 · PyTorch · FastAPI · Groq | Standalone AI microservice — shared by all four below |
+| [omyfish-java](https://github.com/fenghebonjour/omyfish-java) | Java 21 · Spring Boot 3.x · Hibernate · Spring AMQP | Enterprise microservices — Hexagonal Architecture + Event-Driven |
+| [omyfish-dotnet](https://github.com/fenghebonjour/omyfish-dotnet) | .NET 10 · ASP.NET Core · EF Core · YARP | Enterprise microservices — Clean Architecture + CQRS (MediatR) |
+| [omyfish-python-web](https://github.com/fenghebonjour/omyfish-python-web) | Django 5.1 · DRF | Enterprise monolith (public) — newest sibling |
+| omyfish-ios | Swift · SwiftUI | Native client (private) — newest sibling |
 
-The shared AI microservice (`omyfish-ai`) wraps the EfficientNet-B3 predictor from this repo (`POST /predict`) and also hosts the Bite Score fishing-timing forecast engine (`GET /bite-score/*`), both consumed by all enterprise projects. All four share the same PostgreSQL/PostGIS + RabbitMQ + MinIO infrastructure stack.
+The shared AI microservice (`omyfish-ai`) wraps the EfficientNet-B3 predictor from this repo (`POST /predict`), hosts the Bite Score fishing-timing forecast engine (`GET /bite-score/*`), and — newest addition — a Groq-powered Regs & Tips chatbot (`GET/POST /regs/*`) for fishing-regulation Q&A. All three are consumed by every enterprise sibling above, which share the same PostgreSQL/PostGIS + RabbitMQ + MinIO infrastructure stack.
 
 ---
 
