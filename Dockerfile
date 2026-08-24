@@ -38,8 +38,8 @@ idx.write_text(content.replace('</head>', css + '</head>', 1))"
 # HF requires PRO for new Docker Spaces, so the shared omyfish-ai service
 # (single source of the bite-score domain) is bundled into this Space's image
 # instead of getting its own Space. A rebuild refreshes it from GitHub main
-# (pulls in omyfish-ai@4943252 — logs the real Groq error on /regs/ask
-# failures instead of a bare 503, to diagnose the Regs & Tips outage).
+# (pulls in omyfish-ai@7b87f52 — moves Regs & Tips off the retired
+# llama-3.3-70b-versatile Groq model onto openai/gpt-oss-120b).
 ADD https://github.com/fenghebonjour/omyfish-ai/archive/refs/heads/main.tar.gz /tmp/omyfish-ai.tar.gz
 RUN mkdir /ai && tar -xzf /tmp/omyfish-ai.tar.gz -C /ai --strip-components=1 \
     && rm /tmp/omyfish-ai.tar.gz \
