@@ -4,11 +4,13 @@ Deferred ideas and future work. Not committed scope — parking lot for things w
 
 ---
 
-## [ ] Add `omyfish-python-web` sibling repo (learning purpose)
+## [x] Add `omyfish-python-web` sibling repo (learning purpose)
 
-**Status:** DESIGN LOCKED, build paused (2026-07-27) — deferred behind finishing the Quebec regs
-chatbot code review. Ready to scaffold in one focused pass when resumed; contract already captured
-below so no re-discovery is needed.
+**Status:** SCAFFOLDED (2026-07-28) at `../omyfish-python-web` — Django project, all 5 apps
+(accounts/species/observations/notifications/billing), JWT auth, AI-service client, docker-compose,
+frontend copied from omyfish-java, smoke-tested end to end (register/login, species list,
+observations CRUD + geojson, notifications, billing/me, admin permission gating). Not yet committed
+to git. Design spec below kept for reference.
 
 **Goal:** Round out the enterprise-language family with a Python full-stack web framework, so the
 same domain is expressed once per major backend ecosystem — for learning/comparison.
