@@ -26,7 +26,7 @@ _REVERSE_GEOCODE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client
 # ── Data access ───────────────────────────────────────────────────────────────
 
 @st.cache_data(ttl=21600, show_spinner=False)
-def fetch_forecast(lat: float, lon: float, species: str = "general", hours: int = 336) -> dict:
+def fetch_forecast(lat: float, lon: float, species: str = "general", hours: int = 48) -> dict:
     resp = requests.get(
         f"{settings.bite_service_url}/bite-score/forecast",
         params={"lat": lat, "lon": lon, "species": species, "hours": hours},
