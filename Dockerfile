@@ -54,6 +54,25 @@ RUN mkdir /ai && tar -xzf /tmp/omyfish-ai.tar.gz -C /ai --strip-components=1 \
 ENV BITE_SERVICE_URL=http://127.0.0.1:8000 \
     DISABLE_FISH_ID=1
 
+# Runs as root by default otherwise — a container breakout or dependency RCE would have full
+# root inside the container for no benefit (BACKLOG.md item B, WEAKNESS_AUDIT.md §1.4).
+# `chown -R app:app /app` (chowning the whole copied source+dependency tree) was tried first
+# and measured at 12+ minutes on this image alone — a real risk of blowing the HF Space build
+# timeout on top of the already-documented torch-wheel-size concern above, for no benefit
+# (COPY leaves regular files world-readable by default, so a non-owner user can already read
+# everything under /app it needs to). Scoped instead to a dedicated home directory the new
+# user actually owns, plus the one app-specific write path: data/observations.db (SQLite,
+# apps/omyfish_api/db/engine.py). Streamlit's own one-time ~/.streamlit/credentials.toml
+# write (even in --headless mode) and the CLIP fish-gate's model cache
+# (services/fish_ai/predictors/clip.py, transformers.from_pretrained) both resolve under
+# $HOME, which HF_HOME/HOME below point at this same small directory rather than /app.
+RUN groupadd -r app && useradd -r -g app -m -d /home/app -s /sbin/nologin app \
+    && mkdir -p /app/data \
+    && chown -R app:app /app/data /home/app
+USER app
+ENV HOME=/home/app \
+    HF_HOME=/home/app/.cache/huggingface
+
 # HuggingFace Spaces requires apps to listen on port 7860
 EXPOSE 7860
 

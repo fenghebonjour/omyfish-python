@@ -1,7 +1,10 @@
+import logging
 import os
 import uuid
 from contextlib import contextmanager
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 IS_POSTGIS = DATABASE_URL.startswith("postgresql")
@@ -122,7 +125,15 @@ def ensure_db() -> bool:
                 init_db()
             _db_initialized = True
         except Exception:
-            pass
+            # A bad migration/DDL failure used to be swallowed here with no trace at all —
+            # every caller (both the FastAPI routes and Streamlit's own in-process calls)
+            # just silently kept retrying the full setup on every request against a DB that
+            # may never come up. Logged loudly now so a real failure is discoverable instead
+            # of only visible as db_ready() staying False forever with no explanation
+            # (BACKLOG.md item B, WEAKNESS_AUDIT.md §3.1). Still not re-raised — this function
+            # is called from many places, including Streamlit script runs that don't expect
+            # it to raise — so callers keep getting a clean False instead of a crash.
+            logger.exception("Database setup failed — db_ready() will keep returning False")
     return _db_initialized
 
 

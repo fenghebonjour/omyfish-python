@@ -65,3 +65,95 @@ exact `{token, refreshToken, userId, email, role}` shape. Custom `User` (email a
 
 **Also mirror sibling conventions:** `ARCHITECTURE.md` w/ diagrams + scaling table, `README.md`,
 `CLAUDE.md`, `Makefile`, `docker-compose.yml`, `.env.example`, CI. Target path: `../omyfish-python-web`.
+
+---
+
+## [~] B — Weakness audit follow-up (ported from omyfish-dotnet)
+
+**Status:** IN PROGRESS (added 2026-09-11). `omyfish-dotnet` went through a
+senior-dev-style weakness audit (its `BACKLOG.md` item F) and asked for the
+same treatment across the rest of the family — already ported to
+`omyfish-java`, `omyfish-python-web`, and `omyfish-ai`. Full explanation in
+`docs/WEAKNESS_AUDIT.md` — this entry is the "what shipped". This repo is
+the odd one out architecturally: the deployed Hugging Face Space runs
+**Streamlit only** (plus a loopback-only bundled bite-score API) — the
+FastAPI app under `apps/omyfish_api/` (auth, billing, admin, `/predict`,
+`/identify-fish`, `/observations`) is a fully-built, fully-tested, legacy
+multi-tenant API surface that is **never started in the deployed Docker
+image**. That fact reshapes the practical risk of several findings below.
+
+**Security:**
+- ~~No rate limiting on the actually-reachable identify path~~ — fixed: a
+  per-session cooldown (`_identify_rate_limited()` in
+  `apps/omyfish_web/main.py`, 10 new identifications/60s/browser session)
+  on Streamlit's Identify tab, since there's no ASGI middleware layer to
+  hang a per-IP limiter on like the enterprise siblings' gateways. The
+  FastAPI routes themselves still have no rate limiting — not reachable on
+  the public Space today, but real if `apps.omyfish_api` is ever deployed
+  reachably (see bonus finding 1 below). (§1.2)
+- ~~Container runs as root~~ — fixed: non-root `USER app` with its own
+  home (`/home/app`), not `/app` itself. A first attempt chowned the whole
+  `/app` tree (needed for Streamlit's one-time
+  `~/.streamlit/credentials.toml` write) but measured at 12+ minutes on a
+  real build — real risk of the Hugging Face Space build timeout, for no
+  benefit `COPY` doesn't already give a non-owner reader. Rebuilt scoped to
+  `/home/app` ($HOME/$HF_HOME) plus the one real write path, `/app/data`
+  (SQLite). Verified via `docker run --entrypoint id` (non-root) and a live
+  `ensure_db()` call inside the built image. (§1.4)
+- §1.1 (gateway auth) / §1.3 (refresh token) — not applicable as literally
+  stated; §1.3 has a related, smaller-blast-radius exposure (a JS-writable
+  cookie holding the single 24h access token) that's architecturally
+  unfixable without a server-side proxy — noted, not fixed.
+- ~~`GET /observations` leaked every user's data to anonymous callers~~ —
+  fixed: now requires auth and scopes to the caller, matching the family
+  convention (only `/observations/geojson` stays intentionally public).
+  Updated the test that had locked in the old behavior, plus three others
+  that used anonymous `GET /observations` for verification. (Bonus finding 2)
+
+**Resilience:**
+- ~~No global exception handling~~ — fixed:
+  `@app.exception_handler(Exception)` in `apps/omyfish_api/main.py`. (§2.2)
+- §2.1 (timeout/retry) — already fine on timeouts (every outbound call in
+  this repo's own code already sets one); retry not fixed, lower urgency
+  than `omyfish-ai`'s per-call-billed Groq client.
+- §2.3/§2.4 (outbox/idempotency) — not applicable, no broker exists.
+
+**Data layer:**
+- ~~`ensure_db()` silently swallowed migration failures~~ — fixed: removed
+  the bare `except Exception: pass`, now logs at error level before
+  returning `False`. Deliberately not re-raised — this function is called
+  from many places, including Streamlit script runs that don't expect it
+  to throw — so every caller keeps its existing behavior on failure, but a
+  real failure is now discoverable in logs instead of retried silently
+  forever on every request. (§3.1)
+- §3.2/§3.3/§3.4 — already fine or not applicable (Alembic's revision
+  chain can't silently omit a file; the PostGIS `geom` column is actually
+  populated, the opposite of dotnet's dead-column finding; no N+1 queries
+  found anywhere).
+
+**Testing/CI:**
+- ~~CI's syntax-check step silently omitted the auth/billing/admin
+  files~~ — fixed: `apps/omyfish_api/{auth,billing}.py` and
+  `routes/{auth,users,billing,admin}.py` added to the `py_compile` list.
+- Auth/billing/admin test coverage was already substantial before this
+  audit — ahead of the other siblings' pre-fix baseline.
+- **Not done:** the PostGIS/Alembic code path has zero test coverage
+  (`conftest.py` always rebinds to a temp SQLite engine); no dependency
+  scanning/lint/Docker-build check in CI; `deploy.yml`'s relationship to
+  `ci.yml` passing isn't visible from the repo alone.
+
+**Cleanup:**
+- ~~`apps/omyfish_admin/` was an empty, zero-reference package~~ — deleted.
+- ~~`CLAUDE.md`'s repository-structure section was stale~~ — fixed:
+  corrected the `main.py`/`shared/` descriptions, and called out the
+  in-process-vs-HTTP architecture split explicitly.
+
+**Not done in this pass, left for a follow-up round** (see
+`docs/WEAKNESS_AUDIT.md` for full detail):
+- An explicit decision on `apps/omyfish_api`'s dead-code-on-Space status
+  (bonus finding 1) — a product/ownership call, not a code fix.
+- Retry on `apps/omyfish_web`'s outbound HTTP calls.
+- Rate limiting on the FastAPI routes themselves.
+- `JWT_SECRET` fail-closed enforcement in production config (bonus finding 3).
+- Test coverage for the PostGIS/Alembic path; CI hardening (lint,
+  dependency scan, Docker build check).

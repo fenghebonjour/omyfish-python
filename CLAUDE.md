@@ -43,11 +43,19 @@ python -c "from services.fish_ai.predictors.efficientnet import FishPredictor; F
 
 ```
 apps/
-  omyfish_api/        FastAPI backend
-    db/engine.py      SQLAlchemy engine + init_db (SQLite or PostGIS)
-    main.py           All API routes (monolithic for now — splits in Phase 5)
+  omyfish_api/        FastAPI backend — auth/billing/admin/predict/observations, each
+                      split into its own file under routes/ (auth.py, users.py,
+                      billing.py, admin.py, health.py, species.py, observations.py);
+                      main.py is just router wiring now, not route handlers
+    db/engine.py      SQLAlchemy engine + init_db (SQLite) / Alembic migrations (PostGIS)
   omyfish_web/
-    main.py           Streamlit frontend (Timing · Identify · Map tabs)
+    main.py           Streamlit frontend (Timing · Identify · Map tabs) — the actual
+                      production entrypoint on the Hugging Face Space; calls
+                      apps.omyfish_api's auth/billing/repositories in-process, never
+                      over HTTP, so omyfish_api's own FastAPI routes (including their
+                      Depends(...) auth checks) are NOT reachable on the deployed Space
+                      — only via `make api`/docker-compose's separate api service
+                      (see docs/WEAKNESS_AUDIT.md for what this means for security findings)
     timing.py         Timing tab — Bite Score forecast UI (calls omyfish-ai)
 
 services/
@@ -66,7 +74,9 @@ services/
   gis_service/
     exif.py           extract_exif_gps — EXIF GPS extraction
 
-shared/               Future: domain models, schemas, constants, utils
+shared/               Live, load-bearing code — config.py (settings), events.py
+                      (domain event logging), schemas/ (Pydantic models shared by
+                      omyfish_api and omyfish_web)
 data/
   raw/                Training images: data/raw/<class_name>/*.jpg
   metadata/           fish_info.json — species knowledge base

@@ -76,13 +76,17 @@ OBS = {
 }
 
 
-def test_create_and_list_observation(client):
-    r = client.post("/observations", json=OBS)
+def test_create_and_list_observation(client, auth_headers):
+    headers, _ = auth_headers
+    r = client.post("/observations", json=OBS, headers=headers)
     assert r.status_code == 200
     obs_id = r.json()["id"]
     assert r.json()["status"] == "created"
 
-    rows = client.get("/observations").json()
+    # GET /observations now requires auth and scopes to the caller (see
+    # test_list_observations_requires_auth below), so this needs the same identity on
+    # both the create and the list to see the row.
+    rows = client.get("/observations", headers=headers).json()
     assert [row["id"] for row in rows] == [obs_id]
     row = rows[0]
     assert row["species_name"] == "walleye"
@@ -98,8 +102,15 @@ def test_authenticated_observation_gets_user_id(client, auth_headers):
     mine = client.get("/observations", headers=headers).json()
     assert len(mine) == 1 and mine[0]["user_id"] == user_id
 
-    everything = client.get("/observations").json()
-    assert len(everything) == 2
+
+def test_list_observations_requires_auth(client):
+    # GET /observations used to fall through to an unfiltered query for anonymous
+    # callers, leaking every user's coordinates/species/timestamps — now requires auth
+    # and always scopes to the caller, matching the family convention (only
+    # /observations/geojson is an intentionally public map feed, see the test below)
+    # (BACKLOG.md item B, WEAKNESS_AUDIT.md bonus finding 2).
+    r = client.get("/observations")
+    assert r.status_code == 401
 
 
 def test_observations_geojson(client):
@@ -136,10 +147,13 @@ def test_identify_fish_saves_observation_with_manual_coords(client):
     assert body["latitude"] == 46.8 and body["longitude"] == -71.2
     assert "observation_id" in body
 
-    rows = client.get("/observations").json()
-    assert rows[0]["id"] == body["observation_id"]
-    assert rows[0]["species_name"] == "walleye"
-    assert rows[0]["source"] == "upload"
+    # /observations now requires auth (see test_list_observations_requires_auth) — this
+    # call is anonymous by design, so verify via /observations/geojson instead, which
+    # stays intentionally public.
+    features = client.get("/observations/geojson").json()["features"]
+    assert features[0]["properties"]["id"] == body["observation_id"]
+    assert features[0]["properties"]["species_name"] == "walleye"
+    assert features[0]["properties"]["source"] == "upload"
 
 
 def test_identify_fish_with_coords_folds_in_regs_data(client, monkeypatch):
@@ -191,7 +205,8 @@ def test_identify_fish_without_coords_does_not_save(client):
     r = client.post("/identify-fish", files=_png_upload(), data={"save": "true"})
     assert r.status_code == 200
     assert "observation_id" not in r.json()
-    assert client.get("/observations").json() == []
+    # /observations now requires auth — verify via the still-public geojson endpoint.
+    assert client.get("/observations/geojson").json()["features"] == []
 
 
 def test_predict_rejects_corrupt_image_bytes(client):
@@ -227,4 +242,5 @@ def test_identify_fish_not_a_fish_never_saves(not_a_fish_client):
     body = r.json()
     assert body["is_fish"] is False
     assert "observation_id" not in body
-    assert not_a_fish_client.get("/observations").json() == []
+    # /observations now requires auth — verify via the still-public geojson endpoint.
+    assert not_a_fish_client.get("/observations/geojson").json()["features"] == []

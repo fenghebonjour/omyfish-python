@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -282,6 +283,26 @@ with tab_timing:
 
 # ── Identify tab ─────────────────────────────────────────────────────────────
 
+_IDENTIFY_LIMIT = 10
+_IDENTIFY_WINDOW_SECONDS = 60
+
+
+def _identify_rate_limited() -> bool:
+    """Per-session cooldown on new (non-cached) identify calls. Streamlit has no ASGI
+    middleware layer to hang a per-IP limiter on like the enterprise siblings' gateways, so
+    this is scoped per browser session instead — a visitor could still open multiple
+    sessions to bypass it, but this stops the common case (reloading/re-uploading in one
+    tab) from driving unbounded local model inference on a public Space with no auth
+    (BACKLOG.md item B, WEAKNESS_AUDIT.md §1.2)."""
+    now = time.monotonic()
+    hits = [t for t in st.session_state.get("_identify_hits", []) if now - t < _IDENTIFY_WINDOW_SECONDS]
+    limited = len(hits) >= _IDENTIFY_LIMIT
+    if not limited:
+        hits.append(now)
+    st.session_state["_identify_hits"] = hits
+    return limited
+
+
 with tab_identify:
     st.caption("Upload a fish photo and AI will identify the species.")
 
@@ -299,6 +320,9 @@ with tab_identify:
 
         cache_key = f"result_{model_key}_{uploaded.name}_{uploaded.size}"
         if cache_key not in st.session_state:
+            if _identify_rate_limited():
+                st.error(f"Too many identify requests — try again in a minute (limit: {_IDENTIFY_LIMIT}/min).")
+                st.stop()
             with st.spinner("Identifying..."):
                 st.session_state[cache_key] = ai_service.predict(image, top_k=3)
         result = st.session_state[cache_key]
