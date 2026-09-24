@@ -384,7 +384,7 @@ with tab_map:
             ensure_db()
             rows = ObservationRepository().list(1000, user_id=_map_user["id"])
 
-            m = folium.Map(location=[20, 0], zoom_start=2, tiles="CartoDB positron")
+            m = folium.Map(location=[20, 0], zoom_start=2, tiles="OpenStreetMap")
 
             zones_geojson = fetch_zones_geojson()
             if zones_geojson:
