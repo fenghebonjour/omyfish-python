@@ -157,3 +157,110 @@ image**. That fact reshapes the practical risk of several findings below.
 - `JWT_SECRET` fail-closed enforcement in production config (bonus finding 3).
 - Test coverage for the PostGIS/Alembic path; CI hardening (lint,
   dependency scan, Docker build check).
+
+---
+
+## [ ] C — Wire live Stripe billing on the public HF Space
+
+**Status:** Decided (2026-10-20), staged — see below. Step 1 (success-URL
+confirmation) implemented 2026-10-20. Step 2 (split deployment) not started.
+This directly resolves bonus finding 1 above (`apps/omyfish_api` is
+dead-code-on-Space) for the billing slice specifically, by deciding whether
+and how Stripe actually gets wired up there.
+
+**Key reuse point:** the Stripe *secret key* can be shared across the whole
+family — it's account/sandbox-scoped, not app-scoped. `omyfish-java`'s
+`shop-service/application.yml` documents this exact pattern already
+(`# Can reuse the same Stripe account's secret key`). Only the **webhook
+signing secret** needs to be unique per registered endpoint URL, since
+Stripe ties that secret to the specific endpoint in the Dashboard.
+
+**The blocker found:** the root `Dockerfile`'s `CMD` only starts two
+processes — the bundled ai-service on `127.0.0.1:8000` (loopback-only) and
+Streamlit on the one exposed port, `7860`. `apps/omyfish_api`'s FastAPI app
+(home of `/billing/webhook`) never runs in that container, so there is
+currently no reachable URL for Stripe to deliver `checkout.session.completed`
+(or any other) event to. Checkout session *creation* already works today
+(Streamlit's `admin.py::subscription_sidebar` calls
+`billing.create_checkout_session` in-process), but a real payment would
+never flip the subscription to `active`. Separately, `billing.py`'s
+`success_url=f"{settings.app_base_url}?billing=success"` redirect target is
+already dead code too — nothing in `main.py`/`admin.py` reads
+`st.query_params`, and the URL doesn't even carry a session id to look up.
+
+**Options considered:**
+
+- **A — in-container reverse proxy** (nginx/Caddy on 7860, routing
+  `/billing/webhook` to a real FastAPI process, everything else to
+  Streamlit). Gets the full async webhook path (renewals, Stripe-portal
+  cancellations, disputes). Risks found specific to this container:
+  no process supervisor today (`CMD` just backgrounds with `&`/`exec`, and
+  a missing dep has already once caused the ai-service to "crash silently
+  at import time" while Streamlit still came up looking healthy); Streamlit
+  needs correct WebSocket-upgrade proxying or reruns silently break after
+  first load; the HF Space's SQLite file would gain a second concurrent
+  writer process (`database is locked` risk); `apps/omyfish_api`'s routes
+  (incl. `/admin/*`) become internet-reachable for the first time; roughly
+  doubles the process's RAM footprint on a likely free/basic-tier instance;
+  one more thing that can blow the Space's already-tight build timeout.
+
+- **B — synchronous success-URL confirmation.** Add
+  `{CHECKOUT_SESSION_ID}` to the success_url template; have Streamlit read
+  `st.query_params` on load, retrieve that Checkout Session from Stripe,
+  and apply the same activation logic `checkout.session.completed` would
+  have — directly, no webhook needed. Cheap, no new process, no proxy.
+  Tradeoff: only covers the moment checkout completes; a later renewal
+  failure or a Stripe-customer-portal cancellation never reaches the Space
+  without a webhook — those still need the full path below.
+
+- **Alternatives that keep the real webhook, instead of running it inside
+  the fragile Streamlit container:**
+  1. **Split `apps/omyfish_api` into its own deployment** (second HF Space,
+     or Fly/Render free tier) pointed at a **shared external Postgres** —
+     register the Stripe webhook against *that* URL. Zero changes to the
+     existing Streamlit container; already-documented direction for this
+     repo (`docs/OMyFish-Python-Startup-Strategies.md` names Supabase
+     Postgres as the intended persistence story past SQLite), and the
+     Alembic/Postgres path was already verified working end-to-end
+     (2026-10-19, local Postgres container). Cost: a second deployment and
+     DB to provision/manage, secrets duplicated across two deploys.
+  2. **A minimal webhook-only serverless function** (Cloudflare
+     Worker/Vercel function) that just verifies the Stripe signature and
+     writes to that same shared Postgres, instead of running all of
+     FastAPI. Lighter than #1, but means re-implementing signature
+     verification and event-dispatch logic somewhere else — a second copy
+     of `billing.py`'s dispatch logic that can drift.
+  3. **Stripe CLI (`stripe listen --forward-to`)** — legitimate for local
+     webhook testing, not a deployed-production answer (needs a
+     forwarding process you keep running yourself).
+
+**Decision (2026-10-20):** split-deployment (#1) is the real target, staged
+in two steps instead of built all at once:
+
+1. **Now, on the existing Space:** ship **B** (success-URL confirmation) as
+   the interim activation path. It's cheap, needs no new process, and is
+   already compatible with this session's idempotency work —
+   `create_checkout_session` already takes `idempotency_key`, so replaying
+   the same Checkout Session id on a page reload is already safe. Closes
+   the "checkout works but the subscription never activates" gap today
+   with zero new infrastructure.
+2. **Before relying on it for real money:** stand up #1 — `apps/omyfish_api`
+   as its own small deployment against the shared Supabase Postgres, with
+   the Stripe webhook registered against *that* URL. It's the only option
+   that gets real async events (renewals, portal cancellations, disputes)
+   without touching the fragile single-container Space (rules out **A**:
+   no process supervisor, SQLite second-writer risk, `/admin/*` going
+   public, RAM/build-timeout pressure) and without re-implementing
+   `billing.py`'s dispatch/idempotency/dedup logic in a second runtime
+   (rules out **#2**: exactly the kind of drift-prone duplicate the
+   idempotency/webhook-dedup/reconcile work this session was built to avoid
+   having two copies of).
+
+Run `reconcile()` on a schedule (e.g. hourly, `lookback_hours` at least 2x
+the schedule interval) regardless of which step is live — it's the safety
+net for whatever a missed webhook or a B-only window drops, and it's
+already wired to repair exactly that gap.
+
+**A** (in-container proxy) and **#3** (Stripe CLI) are out: A's risk list is
+specific to this container and not worth it given a working two-step
+alternative; #3 is dev-tooling only, not a production answer.

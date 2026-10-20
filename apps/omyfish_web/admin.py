@@ -22,6 +22,19 @@ def subscription_sidebar(user: dict) -> None:
     from apps.omyfish_api.repositories.idempotency_repository import IdempotencyConflict, IdempotencyRepository
 
     repo = _subs_repo()
+
+    # Interim activation path while no webhook endpoint is reachable on this
+    # deployment (BACKLOG.md item C, step 1): confirm the Checkout Session
+    # directly on the page load success_url redirects back to, instead of
+    # waiting on a webhook that never arrives here.
+    if st.query_params.get("billing") == "success" and st.query_params.get("session_id"):
+        try:
+            billing.confirm_checkout_session(st.query_params["session_id"], repo)
+        except Exception:
+            st.warning("Payment received, but we couldn't confirm it automatically — "
+                       "contact support if your subscription doesn't update shortly.")
+        st.query_params.clear()
+
     sub = repo.get_for_user(user["id"]) or repo.start_trial(user["id"])
     status = sub["status"]
 

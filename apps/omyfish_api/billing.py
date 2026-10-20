@@ -59,7 +59,7 @@ def create_checkout_session(user_id: str, email: str, plan: str, idempotency_key
         customer_email=email,
         client_reference_id=user_id,
         line_items=[{"price": _price_id(plan), "quantity": 1}],
-        success_url=f"{settings.app_base_url}?billing=success",
+        success_url=f"{settings.app_base_url}?billing=success&session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{settings.app_base_url}?billing=canceled",
         metadata={"user_id": user_id, "plan": plan},
         idempotency_key=idempotency_key,
@@ -178,22 +178,49 @@ def apply_event(event: dict, repo) -> Optional[str]:
     return result
 
 
+def _activate_from_checkout_session(obj: dict, repo) -> Optional[str]:
+    user_id = obj.get("client_reference_id") or (obj.get("metadata") or {}).get("user_id")
+    if not user_id:
+        return None
+    repo.set_active(
+        user_id,
+        plan=(obj.get("metadata") or {}).get("plan", "monthly"),
+        period_end=None,  # authoritative period end arrives on subscription.updated
+        stripe_customer_id=obj.get("customer"),
+        stripe_subscription_id=obj.get("subscription"),
+    )
+    return user_id
+
+
+def confirm_checkout_session(session_id: str, repo) -> Optional[str]:
+    """Synchronous fallback for deployments with no reachable webhook endpoint
+    (BACKLOG.md item C, step 1): retrieve the Checkout Session directly and
+    apply the same activation `checkout.session.completed` would have.
+    Dedup is keyed off the session id (not a webhook event id) since the
+    caller — Streamlit, on the page load the success_url redirects back to —
+    may call this again on a later rerun of the same load."""
+    stripe = _stripe()
+    session = stripe.checkout.Session.retrieve(session_id)
+    if session.get("status") != "complete":
+        return None
+
+    dedup_key = f"checkout_session:{session_id}"
+    events_repo = WebhookEventRepository()
+    if events_repo.already_processed(dedup_key):
+        return session.get("client_reference_id") or (session.get("metadata") or {}).get("user_id")
+
+    user_id = _activate_from_checkout_session(session, repo)
+    if user_id:
+        events_repo.mark_processed(dedup_key)
+    return user_id
+
+
 def _apply_event_effects(event: dict, repo) -> Optional[str]:
     etype = event["type"]
     obj = event["data"]["object"]
 
     if etype == "checkout.session.completed":
-        user_id = obj.get("client_reference_id") or (obj.get("metadata") or {}).get("user_id")
-        if not user_id:
-            return None
-        repo.set_active(
-            user_id,
-            plan=(obj.get("metadata") or {}).get("plan", "monthly"),
-            period_end=None,  # authoritative period end arrives on subscription.updated
-            stripe_customer_id=obj.get("customer"),
-            stripe_subscription_id=obj.get("subscription"),
-        )
-        return user_id
+        return _activate_from_checkout_session(obj, repo)
 
     if etype in ("customer.subscription.updated", "customer.subscription.deleted"):
         user_id = repo.find_user_by_stripe_customer(obj.get("customer"))
