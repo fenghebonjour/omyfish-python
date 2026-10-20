@@ -5,6 +5,7 @@ when Stripe env vars are absent so the rest of the app works without them.
 from datetime import datetime, timezone
 from typing import Optional
 
+from apps.omyfish_api.repositories.webhook_event_repository import WebhookEventRepository
 from shared.config import settings
 
 PLANS = {
@@ -12,8 +13,19 @@ PLANS = {
     "yearly": {"label": "29 CAD / year", "amount_cad": 29},
 }
 
+# Same timeout discipline as the Bite Score forecast's requests.get(timeout=...) call
+# (apps/omyfish_web/timing.py) — a slow Stripe must never hang a request indefinitely.
+# No retries: a failed charge/subscription-create must never be retried without the
+# idempotency key already in place, so this is deliberately timeout-only.
+CONNECT_TIMEOUT_S = 10
+READ_TIMEOUT_S = 15
+
 
 class BillingNotConfigured(Exception):
+    pass
+
+
+class RefundNotAvailable(Exception):
     pass
 
 
@@ -22,6 +34,10 @@ def _stripe():
         raise BillingNotConfigured("Set STRIPE_SECRET_KEY to enable billing.")
     import stripe
     stripe.api_key = settings.stripe_secret_key
+    if stripe.default_http_client is None:
+        stripe.default_http_client = stripe.RequestsClient(
+            timeout=(CONNECT_TIMEOUT_S, READ_TIMEOUT_S)
+        )
     return stripe
 
 
@@ -35,7 +51,7 @@ def _price_id(plan: str) -> str:
     return price
 
 
-def create_checkout_session(user_id: str, email: str, plan: str) -> str:
+def create_checkout_session(user_id: str, email: str, plan: str, idempotency_key: str) -> str:
     """Returns the Stripe Checkout URL for the given plan."""
     stripe = _stripe()
     session = stripe.checkout.Session.create(
@@ -46,8 +62,95 @@ def create_checkout_session(user_id: str, email: str, plan: str) -> str:
         success_url=f"{settings.app_base_url}?billing=success",
         cancel_url=f"{settings.app_base_url}?billing=canceled",
         metadata={"user_id": user_id, "plan": plan},
+        idempotency_key=idempotency_key,
     )
     return session.url
+
+
+def refund_subscription(stripe_subscription_id: str, idempotency_key: str,
+                         amount_cents: Optional[int] = None) -> dict:
+    """Refund the subscription's latest paid invoice (full, or partial via
+    amount_cents). Local subscription status is left untouched — refunding
+    is a separate explicit action from revoke."""
+    stripe = _stripe()
+    sub = stripe.Subscription.retrieve(
+        stripe_subscription_id,
+        expand=["latest_invoice.payments.data.payment.payment_intent"],
+    )
+    invoice = sub.get("latest_invoice") or {}
+    payments = (invoice.get("payments") or {}).get("data") or []
+    payment_intent_id = None
+    if payments:
+        payment = payments[0].get("payment") or {}
+        pi = payment.get("payment_intent")
+        payment_intent_id = pi["id"] if isinstance(pi, dict) else pi
+    if not payment_intent_id:
+        raise RefundNotAvailable("No paid invoice to refund for this subscription.")
+
+    params = {"payment_intent": payment_intent_id, "idempotency_key": idempotency_key}
+    if amount_cents is not None:
+        params["amount"] = amount_cents
+    refund = stripe.Refund.create(**params)
+    return {"refund_id": refund.id, "status": refund.status, "amount": refund.amount}
+
+
+def list_recent_subscriptions(since: datetime) -> list[dict]:
+    """List Stripe subscriptions created since `since`, for reconciliation.
+    Every subscription created via create_checkout_session carries user_id/plan
+    in its metadata; a subscription missing that metadata isn't ours and is
+    skipped."""
+    stripe = _stripe()
+    candidates = []
+    subs = stripe.Subscription.list(created={"gte": int(since.timestamp())}, limit=100)
+    for sub in subs.auto_paging_iter():
+        metadata = sub.get("metadata") or {}
+        user_id = metadata.get("user_id")
+        if not user_id:
+            continue
+        candidates.append({
+            "user_id": user_id,
+            "plan": metadata.get("plan"),
+            "stripe_customer_id": sub.get("customer"),
+            "stripe_subscription_id": sub.get("id"),
+            "status": sub.get("status"),
+            "current_period_end": sub.get("current_period_end"),
+        })
+    return candidates
+
+
+def reconcile(since: datetime, repo) -> dict:
+    """Repair local subscription rows whose Stripe link is missing or
+    mismatched (e.g. the process crashed between the Stripe call succeeding
+    and the local row being saved), then resync status/period_end from the
+    same data. One bad candidate is skipped rather than aborting the rest."""
+    repaired = resynced = skipped = 0
+    for candidate in list_recent_subscriptions(since):
+        try:
+            user_id = candidate["user_id"]
+            current = repo.get_for_user(user_id) or repo.start_trial(user_id)
+            linked = (
+                current.get("stripe_customer_id") == candidate["stripe_customer_id"]
+                and current.get("stripe_subscription_id") == candidate["stripe_subscription_id"]
+            )
+            if not linked:
+                repaired += 1
+
+            if candidate["status"] in ("canceled", "unpaid", "incomplete_expired"):
+                repo.set_status(user_id, "canceled")
+            else:
+                period_end = candidate["current_period_end"]
+                repo.set_active(
+                    user_id,
+                    plan=candidate.get("plan") or current.get("plan") or "monthly",
+                    period_end=datetime.fromtimestamp(period_end, tz=timezone.utc)
+                    if period_end else None,
+                    stripe_customer_id=candidate["stripe_customer_id"],
+                    stripe_subscription_id=candidate["stripe_subscription_id"],
+                )
+            resynced += 1
+        except Exception:
+            skipped += 1
+    return {"repaired": repaired, "resynced": resynced, "skipped": skipped}
 
 
 def verify_webhook(payload: bytes, signature: str):
@@ -60,7 +163,22 @@ def verify_webhook(payload: bytes, signature: str):
 
 def apply_event(event: dict, repo) -> Optional[str]:
     """Map a Stripe event onto subscription state. Returns the affected
-    user_id (or None if the event type is ignored)."""
+    user_id (or None if the event type is ignored). Stripe can and does
+    redeliver webhooks; a redelivered event id short-circuits here instead
+    of reapplying it."""
+    event_id = event.get("id")
+    events_repo = WebhookEventRepository()
+    if event_id and events_repo.already_processed(event_id):
+        return event_id
+
+    result = _apply_event_effects(event, repo)
+
+    if event_id and result is not None:
+        events_repo.mark_processed(event_id)
+    return result
+
+
+def _apply_event_effects(event: dict, repo) -> Optional[str]:
     etype = event["type"]
     obj = event["data"]["object"]
 

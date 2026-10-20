@@ -1,10 +1,13 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import text
 
+from apps.omyfish_api import billing
 from apps.omyfish_api.auth import require_admin
+from apps.omyfish_api.billing import BillingNotConfigured, RefundNotAvailable
 from apps.omyfish_api.db.engine import ensure_db, get_db
+from apps.omyfish_api.repositories.idempotency_repository import IdempotencyConflict, IdempotencyRepository
 from apps.omyfish_api.repositories.subscription_repository import SubscriptionRepository
 from apps.omyfish_api.repositories.user_repository import UserRepository
 from shared.schemas.user import TokenData
@@ -56,6 +59,44 @@ def revoke(user_id: str, repo: SubscriptionRepository = Depends(_subs)):
     return repo_state(user_id, repo)
 
 
+@router.post("/subscriptions/{user_id}/refund")
+def refund(user_id: str, body: dict | None = None,
+           idempotency_key: str = Header(..., alias="Idempotency-Key"),
+           repo: SubscriptionRepository = Depends(_subs)):
+    """Refund the subscription's latest paid invoice. Does not touch local
+    subscription status — that's a separate explicit action (revoke)."""
+    sub = repo.get_for_user(user_id)
+    if not sub:
+        raise HTTPException(404, "No subscription for that user")
+    if not sub.get("stripe_subscription_id"):
+        raise HTTPException(400, "No Stripe subscription on file for that user")
+    amount_cents = (body or {}).get("amount_cents")
+
+    idem_repo = IdempotencyRepository()
+    try:
+        replay = idem_repo.reserve(idempotency_key, "refund", user_id)
+    except IdempotencyConflict as e:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(e))
+    if replay is not None:
+        return replay
+
+    try:
+        result = billing.refund_subscription(
+            sub["stripe_subscription_id"], idempotency_key, amount_cents)
+    except BillingNotConfigured as e:
+        idem_repo.release(idempotency_key, "refund")
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e))
+    except RefundNotAvailable as e:
+        idem_repo.release(idempotency_key, "refund")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e))
+    except Exception:
+        idem_repo.release(idempotency_key, "refund")
+        raise
+
+    idem_repo.complete(idempotency_key, "refund", result)
+    return result
+
+
 @router.post("/users/{user_id}/extend-trial")
 def extend_trial(user_id: str, body: dict | None = None,
                  repo: SubscriptionRepository = Depends(_subs)):
@@ -74,6 +115,16 @@ def extend_trial(user_id: str, body: dict | None = None,
              "uid": user_id},
         )
     return repo_state(user_id, repo)
+
+
+@router.post("/subscriptions/reconcile")
+def reconcile_subscriptions(lookback_hours: int = 24,
+                             repo: SubscriptionRepository = Depends(_subs)):
+    since = datetime.now(timezone.utc) - timedelta(hours=lookback_hours)
+    try:
+        return billing.reconcile(since, repo)
+    except BillingNotConfigured as e:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(e))
 
 
 def repo_state(user_id: str, repo: SubscriptionRepository) -> dict:

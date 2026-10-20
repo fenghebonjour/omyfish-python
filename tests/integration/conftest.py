@@ -47,7 +47,9 @@ def client(tmp_path, monkeypatch):
     import apps.omyfish_api.db.engine as eng
     from apps.omyfish_api.dependencies import get_ai_service
     from apps.omyfish_api.main import app
+    from apps.omyfish_api.rate_limit import reset_rate_limits
 
+    reset_rate_limits()
     test_engine = create_engine(
         f"sqlite:///{tmp_path / 'test.db'}",
         connect_args={"check_same_thread": False},

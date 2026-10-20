@@ -102,6 +102,23 @@ def init_db():
                     updated_at              TEXT DEFAULT (datetime('now'))
                 )
             """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS idempotency_keys (
+                    idempotency_key  TEXT NOT NULL,
+                    endpoint         TEXT NOT NULL,
+                    user_id          TEXT NOT NULL,
+                    status           TEXT NOT NULL DEFAULT 'pending',
+                    result_json      TEXT,
+                    created_at       TEXT DEFAULT (datetime('now')),
+                    PRIMARY KEY (idempotency_key, endpoint)
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS processed_webhook_events (
+                    event_id      TEXT PRIMARY KEY,
+                    processed_at  TEXT DEFAULT (datetime('now'))
+                )
+            """))
         conn.commit()
 
 

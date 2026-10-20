@@ -44,14 +44,22 @@ def test_expired_trial_reads_as_expired(client):
 def test_checkout_returns_503_when_stripe_unconfigured(client, monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "")
     headers = _register_and_login(client)
+    headers["Idempotency-Key"] = "key-1"
     r = client.post("/billing/checkout", json={"plan": "monthly"}, headers=headers)
     assert r.status_code == 503
 
 
 def test_checkout_rejects_unknown_plan(client):
     headers = _register_and_login(client)
+    headers["Idempotency-Key"] = "key-1"
     r = client.post("/billing/checkout", json={"plan": "weekly"}, headers=headers)
     assert r.status_code == 400
+
+
+def test_checkout_requires_idempotency_key(client):
+    headers = _register_and_login(client)
+    r = client.post("/billing/checkout", json={"plan": "monthly"}, headers=headers)
+    assert r.status_code == 422
 
 
 def test_billing_requires_auth(client):

@@ -15,8 +15,11 @@ def _subs_repo():
 # ── Sidebar subscription card (any logged-in user) ────────────────────────────
 
 def subscription_sidebar(user: dict) -> None:
+    import uuid
+
     from apps.omyfish_api import billing
     from apps.omyfish_api.billing import BillingNotConfigured
+    from apps.omyfish_api.repositories.idempotency_repository import IdempotencyConflict, IdempotencyRepository
 
     repo = _subs_repo()
     sub = repo.get_for_user(user["id"]) or repo.start_trial(user["id"])
@@ -37,12 +40,27 @@ def subscription_sidebar(user: dict) -> None:
             with col:
                 if st.button(billing.PLANS[plan]["label"], key=f"sub_{plan}",
                              use_container_width=True):
+                    # Key persists in session_state across a rerun so a duplicate click that
+                    # lands before the first completes replays instead of starting a second
+                    # Stripe subscription; cleared once this attempt reaches a definite outcome.
+                    idem_key = st.session_state.setdefault(f"checkout_idem_{plan}", str(uuid.uuid4()))
+                    idem_repo = IdempotencyRepository()
                     try:
-                        url = billing.create_checkout_session(
-                            user["id"], user["email"], plan)
+                        replay = idem_repo.reserve(idem_key, "checkout", user["id"])
+                        if replay is not None:
+                            url = replay["checkout_url"]
+                        else:
+                            url = billing.create_checkout_session(
+                                user["id"], user["email"], plan, idempotency_key=idem_key)
+                            idem_repo.complete(idem_key, "checkout", {"checkout_url": url})
+                        st.session_state.pop(f"checkout_idem_{plan}", None)
                         st.session_state["checkout_url"] = url
                     except BillingNotConfigured:
+                        idem_repo.release(idem_key, "checkout")
+                        st.session_state.pop(f"checkout_idem_{plan}", None)
                         st.session_state["checkout_url"] = None
+                    except IdempotencyConflict:
+                        pass  # a request for this click is already in flight; let it finish
         if "checkout_url" in st.session_state:
             if st.session_state["checkout_url"]:
                 st.link_button("Continue to secure checkout →",
