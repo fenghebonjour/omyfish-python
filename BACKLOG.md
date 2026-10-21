@@ -160,13 +160,15 @@ image**. That fact reshapes the practical risk of several findings below.
 
 ---
 
-## [ ] C — Wire live Stripe billing on the public HF Space
+## [x] C — Wire live Stripe billing on the public HF Space
 
-**Status:** Decided (2026-10-20), staged — see below. Step 1 (success-URL
-confirmation) implemented 2026-10-20. Step 2 (split deployment) not started.
-This directly resolves bonus finding 1 above (`apps/omyfish_api` is
-dead-code-on-Space) for the billing slice specifically, by deciding whether
-and how Stripe actually gets wired up there.
+**Status:** Done (2026-10-21). Step 1 (success-URL confirmation) shipped
+2026-10-20. Step 2 (split deployment) deployed and verified end-to-end
+2026-10-21 — a real test-mode checkout on the HF Space activated the
+subscription via the real Stripe webhook delivered to Render (confirmed via
+Stripe's automatic resend after two bugs below were fixed). This directly
+resolves bonus finding 1 above (`apps/omyfish_api` is dead-code-on-Space) for
+the billing slice specifically.
 
 **Key reuse point:** the Stripe *secret key* can be shared across the whole
 family — it's account/sandbox-scoped, not app-scoped. `omyfish-java`'s
@@ -287,41 +289,46 @@ comparison). Scaffolded, not yet deployed:
   to `0.0.0.0:10000` (not the old hardcoded 8000) and `GET /health`
   returned `{"status":"ok","db":true}`.
 
-**Still to do, requires your Render/Supabase/Stripe accounts:**
+**Deployed:** `omyfish-api` on Render free plan (`render.yaml`), env vars set
+per the checklist above (`DATABASE_URL` = shared Supabase, `JWT_SECRET` /
+`ADMIN_EMAILS` matched to the main Space, `APP_BASE_URL` = the main Space's
+direct `https://<user>-<space>.hf.space` URL — not the
+`huggingface.co/spaces/...` wrapper page, since that one doesn't reliably
+forward `?billing=success&session_id=...` query params down into the
+Streamlit iframe). Webhook registered in Stripe's Workbench (the old
+Developers → Webhooks menu is gone) against
+`https://omyfish-api.onrender.com/billing/webhook` for
+`checkout.session.completed`, `customer.subscription.updated`,
+`customer.subscription.deleted`.
 
-1. Deploy `render.yaml` as a Blueprint on Render.
-2. Set the env vars Render will prompt for (all `sync: false` in
-   `render.yaml`, i.e. not committed):
-   - `DATABASE_URL` — the **same** shared Supabase Postgres the main Space
-     already uses (not a new one — that's the whole point of sharing).
-   - `JWT_SECRET` — **must be set to the exact same value as the main
-     Space's**, not left to default. `shared/config.py`'s fallback is a
-     fresh random secret per process start; since both deployments share
-     one `users` table, a mismatched secret means a login token minted by
-     one side silently fails to validate on the other.
-   - `ADMIN_EMAILS` — same list as the main Space, for consistency (only
-     matters for registrations made directly against this deployment).
-   - `APP_BASE_URL` — the main Space's public URL (used in Stripe's
-     `success_url`/`cancel_url`, which must send the user back to the
-     actual app, not this API-only service).
-   - `STRIPE_SECRET_KEY` — reusable as-is from the main Space (account-
-     scoped, not endpoint-scoped; see the reuse note at the top of this
-     item).
-   - `STRIPE_WEBHOOK_SECRET` — **not** reusable — Stripe mints a distinct
-     signing secret per registered endpoint URL; get this from step 3
-     below, not copied from the main Space's.
-   - `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` — same price ids as
-     the main Space.
-3. In the Stripe Dashboard: add a webhook endpoint at
-   `https://<your-render-service>.onrender.com/billing/webhook`, select
-   `checkout.session.completed`, `customer.subscription.updated`, and
-   `customer.subscription.deleted` (the three types `billing.apply_event`
-   handles), then copy its signing secret into `STRIPE_WEBHOOK_SECRET`
-   above.
-4. Hit `https://<your-render-service>.onrender.com/health` once to confirm
-   it's live, then send a Stripe test webhook event from the Dashboard and
-   confirm it returns 200 and flips a test subscription's status.
-5. Once confirmed working, step 1's success-URL confirmation
-   (`confirm_checkout_session`) can stay as-is — it's a harmless redundant
-   path now, not dead code to remove, since it still covers the instant a
-   checkout completes while this webhook is still asleep from idling.
+**Two production bugs found and fixed during first deploy (both pre-existing,
+not introduced by the split — the HF Space was quietly hitting the same two
+once this surfaced them):**
+
+1. **`DATABASE_URL` driver mismatch.** Supabase's Connect-modal URI used the
+   `postgresql+psycopg://` (psycopg3) scheme, but `requirements.txt` only
+   installs `psycopg2-binary` — `engine.py`'s bare `create_engine(DATABASE_URL)`
+   crashed with `ModuleNotFoundError: No module named 'psycopg'` on both
+   Render and, once checked, the HF Space too (Streamlit imports the same
+   `apps/omyfish_api/db/engine` in-process). Fixed by changing the scheme to
+   `postgresql+psycopg2://` in both deployments' secrets — no code change
+   needed.
+2. **Stripe SDK object/dict mismatch.** `requirements.txt` pins
+   `stripe>=9.0.0` unpinned; a newer SDK version returns `Event`/`Session`/
+   `Subscription` objects that no longer support dict-style `.get()`/`[...]`
+   access, which `billing.py` used throughout. Surfaced as a `500` on the
+   live webhook (`AttributeError: 'get' is a dict method, but a Event is not
+   a dict`) and a silently-swallowed failure in the `confirm_checkout_session`
+   fallback (that `except Exception` block has no logging — worth adding if
+   this path ever needs debugging again). Fixed with a small `_as_dict()`
+   helper in `billing.py` that calls `.to_dict()` only when the object has
+   it — real SDK objects get converted, the test suite's plain-dict stubs
+   pass through unchanged.
+
+Also hit along the way, not bugs: `STRIPE_PRICE_MONTHLY`/`STRIPE_PRICE_YEARLY`
+were never set on the HF Space at all (pre-existing gap, unrelated to this
+work) — set now on both deployments.
+
+Step 1's `confirm_checkout_session` stays in place — harmless redundant path,
+still covers the instant a checkout completes while Render's free tier is
+asleep from idling.
