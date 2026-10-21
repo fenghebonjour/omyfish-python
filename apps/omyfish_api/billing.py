@@ -21,6 +21,13 @@ CONNECT_TIMEOUT_S = 10
 READ_TIMEOUT_S = 15
 
 
+def _as_dict(obj):
+    """Stripe SDK responses are StripeObjects, not dicts, as of stripe>=9 —
+    tests stub the SDK boundary with plain dicts directly, so only convert
+    when the object actually offers to_dict()."""
+    return obj.to_dict() if hasattr(obj, "to_dict") else obj
+
+
 class BillingNotConfigured(Exception):
     pass
 
@@ -76,7 +83,8 @@ def refund_subscription(stripe_subscription_id: str, idempotency_key: str,
     sub = stripe.Subscription.retrieve(
         stripe_subscription_id,
         expand=["latest_invoice.payments.data.payment.payment_intent"],
-    ).to_dict()
+    )
+    sub = _as_dict(sub)
     invoice = sub.get("latest_invoice") or {}
     payments = (invoice.get("payments") or {}).get("data") or []
     payment_intent_id = None
@@ -103,7 +111,7 @@ def list_recent_subscriptions(since: datetime) -> list[dict]:
     candidates = []
     subs = stripe.Subscription.list(created={"gte": int(since.timestamp())}, limit=100)
     for sub in subs.auto_paging_iter():
-        sub = sub.to_dict()
+        sub = _as_dict(sub)
         metadata = sub.get("metadata") or {}
         user_id = metadata.get("user_id")
         if not user_id:
@@ -159,7 +167,7 @@ def verify_webhook(payload: bytes, signature: str):
     stripe = _stripe()
     if not settings.stripe_webhook_secret:
         raise BillingNotConfigured("Set STRIPE_WEBHOOK_SECRET to enable the webhook.")
-    return stripe.Webhook.construct_event(payload, signature, settings.stripe_webhook_secret).to_dict()
+    return _as_dict(stripe.Webhook.construct_event(payload, signature, settings.stripe_webhook_secret))
 
 
 def apply_event(event: dict, repo) -> Optional[str]:
@@ -201,7 +209,7 @@ def confirm_checkout_session(session_id: str, repo) -> Optional[str]:
     caller — Streamlit, on the page load the success_url redirects back to —
     may call this again on a later rerun of the same load."""
     stripe = _stripe()
-    session = stripe.checkout.Session.retrieve(session_id).to_dict()
+    session = _as_dict(stripe.checkout.Session.retrieve(session_id))
     if session.get("status") != "complete":
         return None
 
