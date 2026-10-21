@@ -35,6 +35,9 @@ class Settings:
     stripe_webhook_secret: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
     stripe_price_monthly: str = os.getenv("STRIPE_PRICE_MONTHLY", "")  # 5 CAD/month
     stripe_price_yearly: str = os.getenv("STRIPE_PRICE_YEARLY", "")    # 29 CAD/year
+    # Separate endpoint/secret from the subscription webhook above — Stripe mints a
+    # distinct signing secret per registered endpoint URL (shop.py, one-time orders).
+    stripe_shop_webhook_secret: str = os.getenv("STRIPE_SHOP_WEBHOOK_SECRET", "")
     app_base_url: str = os.getenv("APP_BASE_URL", "http://localhost:8501")
     trial_days: int = int(os.getenv("TRIAL_DAYS", "7"))
 

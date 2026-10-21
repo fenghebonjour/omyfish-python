@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from apps.omyfish_api.repositories.webhook_event_repository import WebhookEventRepository
+from apps.omyfish_api.stripe_utils import as_dict as _as_dict
 from shared.config import settings
 
 PLANS = {
@@ -19,13 +20,6 @@ PLANS = {
 # idempotency key already in place, so this is deliberately timeout-only.
 CONNECT_TIMEOUT_S = 10
 READ_TIMEOUT_S = 15
-
-
-def _as_dict(obj):
-    """Stripe SDK responses are StripeObjects, not dicts, as of stripe>=9 —
-    tests stub the SDK boundary with plain dicts directly, so only convert
-    when the object actually offers to_dict()."""
-    return obj.to_dict() if hasattr(obj, "to_dict") else obj
 
 
 class BillingNotConfigured(Exception):

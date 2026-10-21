@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from apps.omyfish_api.db.engine import ensure_db
-from apps.omyfish_api.routes import admin, auth, billing, health, observations, species, users
+from apps.omyfish_api.routes import admin, auth, billing, health, observations, shop, species, users
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,7 @@ app.include_router(admin.router)
 app.include_router(health.router)
 app.include_router(species.router)
 app.include_router(observations.router)
+app.include_router(shop.router)
 
 
 @app.on_event("startup")

@@ -119,6 +119,82 @@ def init_db():
                     processed_at  TEXT DEFAULT (datetime('now'))
                 )
             """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS shop_products (
+                    id              TEXT PRIMARY KEY,
+                    name            TEXT NOT NULL,
+                    description     TEXT,
+                    price_cents     INTEGER NOT NULL,
+                    image_url       TEXT,
+                    stock_quantity  INTEGER NOT NULL DEFAULT 0,
+                    active          INTEGER NOT NULL DEFAULT 1
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS shop_carts (
+                    id           TEXT PRIMARY KEY,
+                    user_id      TEXT UNIQUE,
+                    guest_token  TEXT UNIQUE,
+                    CHECK ((user_id IS NULL) != (guest_token IS NULL))
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS shop_cart_items (
+                    cart_id     TEXT NOT NULL REFERENCES shop_carts(id) ON DELETE CASCADE,
+                    product_id  TEXT NOT NULL,
+                    quantity    INTEGER NOT NULL,
+                    PRIMARY KEY (cart_id, product_id)
+                )
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS shop_orders (
+                    id                        TEXT PRIMARY KEY,
+                    user_id                   TEXT,
+                    guest_email               TEXT,
+                    total_cents               INTEGER NOT NULL,
+                    status                    TEXT NOT NULL DEFAULT 'pending_payment',
+                    stripe_session_id         TEXT,
+                    stripe_payment_intent_id  TEXT,
+                    created_at                TEXT DEFAULT (datetime('now')),
+                    paid_at                   TEXT,
+                    return_requested_at       TEXT,
+                    returned_at               TEXT,
+                    return_reason             TEXT,
+                    shipping_recipient_name   TEXT,
+                    shipping_line1            TEXT,
+                    shipping_line2            TEXT,
+                    shipping_city             TEXT,
+                    shipping_state            TEXT,
+                    shipping_postal_code      TEXT,
+                    shipping_country          TEXT,
+                    CHECK ((user_id IS NULL) != (guest_email IS NULL))
+                )
+            """))
+            conn.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS shop_orders_stripe_session_id_idx "
+                "ON shop_orders (stripe_session_id) WHERE stripe_session_id IS NOT NULL"
+            ))
+            conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS shop_orders_user_id_idx ON shop_orders (user_id)"
+            ))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS shop_order_lines (
+                    order_id          TEXT NOT NULL REFERENCES shop_orders(id) ON DELETE CASCADE,
+                    line_index        INTEGER NOT NULL,
+                    product_id        TEXT NOT NULL,
+                    product_name      TEXT NOT NULL,
+                    unit_price_cents  INTEGER NOT NULL,
+                    quantity          INTEGER NOT NULL,
+                    PRIMARY KEY (order_id, line_index)
+                )
+            """))
+            from apps.omyfish_api.db.shop_seed import SHOP_SEED_PRODUCTS
+            for product in SHOP_SEED_PRODUCTS:
+                conn.execute(text(
+                    "INSERT OR IGNORE INTO shop_products "
+                    "(id, name, description, price_cents, image_url, stock_quantity, active) "
+                    "VALUES (:id, :name, :description, :price_cents, :image_url, :stock_quantity, :active)"
+                ), product)
         conn.commit()
 
 

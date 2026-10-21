@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
@@ -64,6 +65,11 @@ if "_cookie_js" in st.session_state:
 
     streamlit_js_eval(js_expressions=st.session_state.pop("_cookie_js"), key="cookie_sync")
 
+if "_guest_cookie_js" in st.session_state:
+    from streamlit_js_eval import streamlit_js_eval
+
+    streamlit_js_eval(js_expressions=st.session_state.pop("_guest_cookie_js"), key="guest_cookie_sync")
+
 
 def _restore_from_token(token: str) -> bool:
     from jose import JWTError, jwt
@@ -90,6 +96,43 @@ if "auth_user" not in st.session_state and not st.session_state.get("_stale_cook
         st.session_state["_stale_cookie"] = True
         _clear_session()
 
+# ── Guest cart token (Shop tab) ───────────────────────────────────────────────
+# Same cookie mechanism as the auth token above, but for anonymous visitors'
+# cart state. Generated once per browser on first anonymous visit and
+# persisted the same way; cleared once a guest's cart is merged into their
+# account cart on login.
+_GUEST_CART_COOKIE_NAME = "omyfish_guest_cart"
+
+
+def _save_guest_cart_cookie(token: str):
+    max_age = 60 * 60 * 24 * 365  # 1 year
+    st.session_state["_guest_cookie_js"] = (
+        f"window.parent.document.cookie = '{_GUEST_CART_COOKIE_NAME}={token}; path=/; max-age={max_age}'"
+        " + (window.parent.location.protocol === 'https:'"
+        " ? '; SameSite=None; Secure' : '; SameSite=Lax')"
+    )
+
+
+def _clear_guest_cart_cookie():
+    st.session_state["_guest_cookie_js"] = (
+        f"window.parent.document.cookie = '{_GUEST_CART_COOKIE_NAME}=; path=/; max-age=0'"
+        " + (window.parent.location.protocol === 'https:'"
+        " ? '; SameSite=None; Secure' : '; SameSite=Lax')"
+    )
+
+
+# Only derived once per session (like auth_user's cookie restore above) —
+# st.context.cookies reflects the initial request and stays fixed for the
+# session's lifetime, so re-deriving on every rerun would never see a cookie
+# just written via JS and would mint a fresh token (orphaning the cart) on
+# every single widget interaction.
+if "auth_user" not in st.session_state and "guest_cart_token" not in st.session_state:
+    _guest_token = st.context.cookies.get(_GUEST_CART_COOKIE_NAME, "").strip()
+    if not _guest_token:
+        _guest_token = str(uuid.uuid4())
+        _save_guest_cart_cookie(_guest_token)
+    st.session_state["guest_cart_token"] = _guest_token
+
 # ── Auth helpers ──────────────────────────────────────────────────────────────
 
 def _auth_repo():
@@ -97,6 +140,14 @@ def _auth_repo():
     from apps.omyfish_api.repositories.user_repository import UserRepository
     ensure_db()
     return UserRepository()
+
+
+def _merge_guest_cart_if_any(user_id: str) -> None:
+    guest_token = st.session_state.pop("guest_cart_token", None)
+    if guest_token:
+        from apps.omyfish_api import shop
+        shop.merge_guest_cart(user_id, guest_token)
+        _clear_guest_cart_cookie()
 
 
 def _auth_sidebar():
@@ -127,6 +178,7 @@ def _auth_sidebar():
                 st.session_state["auth_user"] = {"id": u["id"], "email": u["email"], "role": u["role"]}
                 from apps.omyfish_api.auth import create_access_token
                 _save_session(create_access_token(u["id"], u["role"]))
+                _merge_guest_cart_if_any(u["id"])
                 st.rerun()
             else:
                 st.error("Invalid credentials.")
@@ -149,6 +201,7 @@ def _auth_sidebar():
                 st.session_state["auth_user"] = {"id": u["id"], "email": u["email"], "role": u["role"]}
                 from apps.omyfish_api.auth import create_access_token
                 _save_session(create_access_token(u["id"], u["role"]))
+                _merge_guest_cart_if_any(u["id"])
                 st.rerun()
 
 
@@ -264,15 +317,23 @@ def save_observation_form(result, image):
 
 st.title("🐟 OMyFish")
 
+from apps.omyfish_web.shop import handle_shop_success_redirect
+handle_shop_success_redirect()
+
 _is_admin = (st.session_state.get("auth_user") or {}).get("role") == "admin"
 if _is_admin:
-    tab_timing, tab_identify, tab_map, tab_regs, tab_admin = st.tabs(
-        ["Timing", "Identify", "Map", "Regs & Tips", "Admin"])
+    tab_timing, tab_identify, tab_map, tab_regs, tab_shop, tab_admin = st.tabs(
+        ["Timing", "Identify", "Map", "Regs & Tips", "Shop", "Admin"])
     with tab_admin:
         from apps.omyfish_web.admin import render_admin
         render_admin()
 else:
-    tab_timing, tab_identify, tab_map, tab_regs = st.tabs(["Timing", "Identify", "Map", "Regs & Tips"])
+    tab_timing, tab_identify, tab_map, tab_regs, tab_shop = st.tabs(
+        ["Timing", "Identify", "Map", "Regs & Tips", "Shop"])
+
+with tab_shop:
+    from apps.omyfish_web.shop import render_shop_tab
+    render_shop_tab(st.session_state.get("auth_user"))
 
 # ── Timing tab ────────────────────────────────────────────────────────────────
 

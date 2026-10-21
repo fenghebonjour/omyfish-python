@@ -332,3 +332,75 @@ work) — set now on both deployments.
 Step 1's `confirm_checkout_session` stays in place — harmless redundant path,
 still covers the instant a checkout completes while Render's free tier is
 asleep from idling.
+
+## [x] D — Port omyfish-java's Omyshop (catalog/cart/checkout/orders/returns)
+
+**Status:** Done (2026-10-21). omyfish-java has a full e-commerce module
+(`services/shop-service`, "Omyshop"): product catalog, guest-or-account cart,
+one-time Stripe checkout, orders, and a 30-day return/refund flow — entirely
+separate from the subscription billing in item C above. Ported here
+feature-equivalent, re-expressed in this repo's flat-module/raw-SQL
+conventions instead of Java's hexagonal ports-and-adapters/gateway
+architecture (no MinIO, no header-forwarded gateway auth — this is a single
+FastAPI process with its own JWT + an optional-guest path).
+
+Scope decisions made before building: guest+account cart parity (guest carts
+merge into the account cart on login, same as Java), a static seed catalog
+with no image-upload endpoint (Java itself has no create/update/delete-product
+use case either, only a seeded catalog), and the full feature (catalog,
+cart, checkout, orders, returns, admin order management) built in one pass
+rather than phased.
+
+**New**, mirroring `billing.py`'s existing patterns throughout (idempotency
+keys, shared `WebhookEventRepository` dedup, the `_as_dict()`/`BillingNotConfigured`
+helpers — extracted into `apps/omyfish_api/stripe_utils.py` so both modules
+share it):
+- `apps/omyfish_api/shop.py` — checkout orchestration (reserve stock + create
+  a `pending_payment` order *before* the Stripe call, same ordering as Java's
+  `ReserveOrderService`; a Stripe-call failure compensates by canceling the
+  order and restocking, mirroring Java's `cancelAndRestock`), webhook
+  handling (`checkout.session.completed`/`.expired`, own
+  `STRIPE_SHOP_WEBHOOK_SECRET` — separate endpoint/secret from the
+  subscription webhook), the synchronous success-URL confirmation fallback,
+  and return-request/approve-refund.
+- `apps/omyfish_api/repositories/{product,cart,order}_repository.py` — same
+  raw-SQL-via-`text()` dict-row style as `subscription_repository.py`.
+- `apps/omyfish_api/routes/shop.py` — a small `X-Cart-Token`/JWT owner
+  resolver mirrors Java's `CartOwnerResolver` for external API clients (the
+  Render deployment is a real HTTP service, not just Streamlit-in-process).
+- `apps/omyfish_web/shop.py` + a new "Shop" tab in `main.py` — catalog, cart,
+  checkout, order history with return requests, guest order lookup, and an
+  admin order/return-approval section. A new `omyfish_guest_cart` cookie
+  persists the guest cart token, same mechanism as the existing
+  `omyfish_token` JWT cookie.
+- Migration `006_add_shop_tables.py` (Postgres) + matching DDL in
+  `engine.py::init_db()` (SQLite) for `shop_products/carts/cart_items/orders/
+  order_lines`, plus a shared `shop_seed.py` catalog so both backends seed
+  identically.
+- `tests/integration/test_shop_*.py` — 18 new tests covering catalog, cart
+  (including guest-merge-on-login), checkout (empty cart, insufficient
+  stock, Stripe-failure compensation), webhook (paid/expired/dedup/invalid
+  signature), and returns (within/past window, admin refund+restock). Full
+  suite: 112 passed.
+
+**A real bug found via Streamlit `AppTest` (not pytest)**: the guest-cart
+cookie-token logic originally re-derived the token from `st.context.cookies`
+on *every* rerun instead of once per session. Since `st.context.cookies` is
+fixed from the initial request for the session's lifetime (same as the
+existing comment on the auth-token cookie already notes), a cookie just
+written via JS is never visible within that same session — so every widget
+interaction would have minted a fresh random guest token and silently
+orphaned the cart. Fixed by gating it on `"guest_cart_token" not in
+st.session_state`, same guard shape as the existing `"auth_user" not in
+st.session_state` check for the auth cookie. Caught by running the actual
+Streamlit script headlessly via `streamlit.testing.v1.AppTest` (clicking
+"Add to cart" across reruns) — worth reaching for `AppTest` again for any
+future session-state-across-reruns logic, since pytest's API-level tests
+can't see this class of bug at all.
+
+**Follow-up required before relying on this for real money, mirroring item
+C's own deploy checklist**: register a second Stripe webhook endpoint
+(`https://omyfish-api.onrender.com/shop/webhook`, events
+`checkout.session.completed`/`checkout.session.expired`) and set
+`STRIPE_SHOP_WEBHOOK_SECRET` on both the HF Space and Render — not yet done,
+since this item was a code port, not a deploy task.
