@@ -8,10 +8,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
+
+# CPU-only torch first: the default PyPI wheels bundle the full CUDA stack
+# (~6 GB of nvidia-* wheels), which blows the build time/size budget on a
+# free-tier host. Mirrors the same fix in the root Dockerfile. This service
+# never actually runs inference (get_ai_service is lazy and only reachable
+# via /predict, which nothing calls here), but requirements.txt is shared
+# across the whole monorepo so the install still has to happen.
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu \
+    "torch>=2.1.0" "torchvision>=0.16.0"
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "apps.omyfish_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shell form (not exec-array) so $PORT expands — Render's Docker runtime
+# ignores EXPOSE and routes to whatever port the process actually binds,
+# injecting PORT itself. Defaults to 8000 to keep docker-compose (which
+# doesn't set PORT) working unchanged.
+CMD ["sh", "-c", "uvicorn apps.omyfish_api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

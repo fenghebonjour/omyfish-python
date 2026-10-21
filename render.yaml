@@ -1,0 +1,37 @@
+# Render Blueprint for the standalone apps/omyfish_api deployment
+# (BACKLOG.md item C, step 2) — the service Stripe's webhook is registered
+# against, since the public HF Space never runs this FastAPI app at all
+# (Streamlit calls billing.py in-process there instead; see
+# docs/WEAKNESS_AUDIT.md's architecture finding).
+#
+# Deploy: Render dashboard -> New -> Blueprint -> point at this repo.
+# Secrets below (sync: false) are prompted for at deploy time, not stored
+# here. See BACKLOG.md item C for the full env var checklist and the
+# Stripe Dashboard webhook-registration steps.
+services:
+  - type: web
+    name: omyfish-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./infrastructure/docker/Dockerfile.api
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_YEARLY
+        sync: false

@@ -264,3 +264,64 @@ already wired to repair exactly that gap.
 **A** (in-container proxy) and **#3** (Stripe CLI) are out: A's risk list is
 specific to this container and not worth it given a working two-step
 alternative; #3 is dev-tooling only, not a production answer.
+
+**Step 2 progress (2026-10-20):** platform picked — **Render free web
+service**, accepting its sleep-after-15-min-idle/cold-start tradeoff (every
+other card-free/no-sleep option checked — Koyeb, PythonAnywhere, Fly.io,
+Railway — failed on at least one of the three asks; see chat for the
+comparison). Scaffolded, not yet deployed:
+
+- `render.yaml` (repo root) — Blueprint pointing at the existing
+  `infrastructure/docker/Dockerfile.api` (already used by
+  `docker-compose.yml` for local Postgres-backed dev, so this is the first
+  time it runs anywhere outside that).
+- `Dockerfile.api` — added the same CPU-only-torch pip step the root
+  Dockerfile already uses (plain `pip install -r requirements.txt` would
+  pull the ~6 GB CUDA wheels, which this service never needs — `/predict`
+  is reachable here but nothing calls it — and would blow a free-tier
+  build). Also switched `CMD` to shell form reading `${PORT:-8000}`, since
+  Render's Docker runtime ignores `EXPOSE` and routes to whatever port the
+  process binds, injecting its own `PORT` — the old hardcoded `--port 8000`
+  would have left the service unreachable. Verified locally: built the
+  image, ran it with `PORT=10000` (simulating Render), confirmed it bound
+  to `0.0.0.0:10000` (not the old hardcoded 8000) and `GET /health`
+  returned `{"status":"ok","db":true}`.
+
+**Still to do, requires your Render/Supabase/Stripe accounts:**
+
+1. Deploy `render.yaml` as a Blueprint on Render.
+2. Set the env vars Render will prompt for (all `sync: false` in
+   `render.yaml`, i.e. not committed):
+   - `DATABASE_URL` — the **same** shared Supabase Postgres the main Space
+     already uses (not a new one — that's the whole point of sharing).
+   - `JWT_SECRET` — **must be set to the exact same value as the main
+     Space's**, not left to default. `shared/config.py`'s fallback is a
+     fresh random secret per process start; since both deployments share
+     one `users` table, a mismatched secret means a login token minted by
+     one side silently fails to validate on the other.
+   - `ADMIN_EMAILS` — same list as the main Space, for consistency (only
+     matters for registrations made directly against this deployment).
+   - `APP_BASE_URL` — the main Space's public URL (used in Stripe's
+     `success_url`/`cancel_url`, which must send the user back to the
+     actual app, not this API-only service).
+   - `STRIPE_SECRET_KEY` — reusable as-is from the main Space (account-
+     scoped, not endpoint-scoped; see the reuse note at the top of this
+     item).
+   - `STRIPE_WEBHOOK_SECRET` — **not** reusable — Stripe mints a distinct
+     signing secret per registered endpoint URL; get this from step 3
+     below, not copied from the main Space's.
+   - `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` — same price ids as
+     the main Space.
+3. In the Stripe Dashboard: add a webhook endpoint at
+   `https://<your-render-service>.onrender.com/billing/webhook`, select
+   `checkout.session.completed`, `customer.subscription.updated`, and
+   `customer.subscription.deleted` (the three types `billing.apply_event`
+   handles), then copy its signing secret into `STRIPE_WEBHOOK_SECRET`
+   above.
+4. Hit `https://<your-render-service>.onrender.com/health` once to confirm
+   it's live, then send a Stripe test webhook event from the Dashboard and
+   confirm it returns 200 and flips a test subscription's status.
+5. Once confirmed working, step 1's success-URL confirmation
+   (`confirm_checkout_session`) can stay as-is — it's a harmless redundant
+   path now, not dead code to remove, since it still covers the instant a
+   checkout completes while this webhook is still asleep from idling.
