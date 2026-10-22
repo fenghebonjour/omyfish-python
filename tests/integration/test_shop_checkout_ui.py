@@ -60,6 +60,32 @@ def _checkout(at):
     [b for b in at.button if b.label == "Checkout"][0].click().run()
 
 
+def _badge_markdown(at):
+    return [m.value for m in at.get("markdown") if "omyfish-cart-badge" in m.value]
+
+
+def test_cart_badge_shows_count_and_hides_when_empty(shop_app):
+    at = shop_app
+    assert _badge_markdown(at) == []  # empty cart: no badge at all
+
+    at.button(key="add_shop-seed-0004").click().run()
+    assert "Cart (1)" in _badge_markdown(at)[0]
+
+    at.button(key="add_shop-seed-0005").click().run()
+    assert "Cart (2)" in _badge_markdown(at)[0]
+
+    _checkout(at)
+    assert _badge_markdown(at) == []  # checkout cleared the cart
+
+
+def test_add_to_cart_sets_scroll_flag_which_is_consumed_once(shop_app):
+    at = shop_app
+    at.button(key="add_shop-seed-0004").click().run()
+    assert "_scroll_to_cart" not in at.session_state  # consumed by the same run
+    at.run()
+    assert not at.exception
+
+
 def test_checkout_link_survives_unrelated_rerun(shop_app):
     at = shop_app
     _checkout(at)

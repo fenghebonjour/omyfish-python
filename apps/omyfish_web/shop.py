@@ -18,12 +18,22 @@ def _cents_to_label(cents: int) -> str:
 
 def render_shop_tab(user: dict | None) -> None:
     from apps.omyfish_api.db.engine import ensure_db
+    from apps.omyfish_api import shop
     ensure_db()
+
+    cart_count = sum(
+        item["quantity"] for item in shop.get_cart_with_items(**_owner_kwargs(user))["items"]
+    )
+    _render_cart_badge(cart_count)
+
+    if st.session_state.pop("_scroll_to_cart", False):
+        _scroll_to_cart()
 
     st.subheader("Catalog")
     _render_catalog(user)
 
     st.divider()
+    st.markdown('<div id="cart-anchor"></div>', unsafe_allow_html=True)
     st.subheader("Your cart")
     _render_cart(user)
 
@@ -39,6 +49,42 @@ def render_shop_tab(user: dict | None) -> None:
         st.divider()
         st.subheader("Track a guest order")
         _render_guest_order_lookup()
+
+
+def _render_cart_badge(count: int) -> None:
+    """Fixed top-right pill, offset from Streamlit's own top-right toolbar
+    (hamburger/deploy buttons) rather than overlapping it. Pure CSS/HTML —
+    no JS, so it degrades harmlessly (just an inert span) if a future
+    Streamlit version changes something it relies on."""
+    if count < 1:
+        return
+    st.markdown(f"""
+        <style>
+        .omyfish-cart-badge {{
+            position: fixed; top: 0.6rem; right: 4.5rem; z-index: 999999;
+            background: #2c5282; color: white; padding: 0.3rem 0.75rem;
+            border-radius: 999px; font-size: 0.85rem; font-weight: 600;
+            text-decoration: none; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }}
+        .omyfish-cart-badge:hover {{ background: #3a6ba5; }}
+        </style>
+        <a class="omyfish-cart-badge" href="#cart-anchor">🛒 Cart ({count})</a>
+    """, unsafe_allow_html=True)
+
+
+def _scroll_to_cart() -> None:
+    """st.markdown(unsafe_allow_html=True) never runs <script> tags — the
+    browser ignores script elements inserted via innerHTML. components.html
+    renders in an actual iframe, where script execution works; the iframe
+    is same-origin (served by the same Streamlit server), so window.parent
+    can reach the real page's DOM to scroll it."""
+    import streamlit.components.v1 as components
+    components.html("""
+        <script>
+        var el = window.parent.document.getElementById('cart-anchor');
+        if (el) { el.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+        </script>
+    """, height=0)
 
 
 def _render_catalog(user: dict | None) -> None:
@@ -60,6 +106,7 @@ def _render_catalog(user: dict | None) -> None:
                          disabled=product["stock_quantity"] < 1):
                 shop.add_to_cart(product["id"], 1, **_owner_kwargs(user))
                 st.toast(f"Added {product['name']} to cart", icon="🛒")
+                st.session_state["_scroll_to_cart"] = True
                 st.rerun()
 
 
