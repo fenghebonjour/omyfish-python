@@ -423,9 +423,15 @@ migration comment says so explicitly — real photos there only exist if an
 admin uploads one via MinIO, not ported here), sourced 6 CC-licensed/
 public-domain photos from Wikimedia Commons/Openverse for Spinnerbait Lure,
 Worm Pack, Popper, Sunglasses, Tackle Box, and Fillet Knife — resized and
-inlined the same self-contained way. Braided Fishing Line and the Insulated
-Mug keep the SVG placeholder; no relevant freely-licensed photo exists for
-either (fishing-line searches mostly surfaced wildlife entangled in line,
-not product shots). Added `shop_products.image_credit` for the CC BY/BY-SA
-attribution the 5 non-public-domain photos require, shown as a caption
+inlined the same self-contained way. Added `shop_products.image_credit` for
+the CC BY/BY-SA attribution 5 of the photos require, shown as a caption
 under the image in the Shop tab (migration 009).
+
+**Last 2 placeholders replaced too (2026-10-22):** Braided Fishing Line and
+the Insulated Mug had no good match in Openverse's Flickr-sourced results
+(line searches mostly surfaced wildlife entangled in fishing line, not
+product shots). Broadening to Openverse's CC0-only sources (Rawpixel) found
+a fishing-reel photo with line visibly wound on the spool, and a steaming
+enamel camp mug — both CC0. All 8 products now use real photos; no SVG
+placeholders remain (migration 010 backfills Postgres; SQLite reconciles
+on every `init_db()` call as before).
