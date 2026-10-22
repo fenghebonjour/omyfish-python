@@ -7,6 +7,8 @@ repeated calls/migrations, same pattern as omyfish-java's Flyway seed.
 Placeholder images are inline SVG data URIs — no external image hosting
 needed, same approach omyfish-java's own seed migration uses."""
 
+import base64
+
 
 def _placeholder_svg(label: str, color: str) -> str:
     svg = (
@@ -16,7 +18,10 @@ def _placeholder_svg(label: str, color: str) -> str:
         f'dominant-baseline="middle" fill="white" font-family="sans-serif">{label}</text>'
         f'</svg>'
     )
-    return "data:image/svg+xml;utf8," + svg
+    # Raw (non-base64) data URIs break here: the hex colors' "#" is parsed as
+    # the URL fragment delimiter, truncating the SVG markup mid-attribute.
+    encoded = base64.b64encode(svg.encode("utf-8")).decode("ascii")
+    return f"data:image/svg+xml;base64,{encoded}"
 
 
 SHOP_SEED_PRODUCTS = [

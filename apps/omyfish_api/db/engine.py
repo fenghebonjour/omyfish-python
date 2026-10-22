@@ -195,6 +195,12 @@ def init_db():
                     "(id, name, description, price_cents, image_url, stock_quantity, active) "
                     "VALUES (:id, :name, :description, :price_cents, :image_url, :stock_quantity, :active)"
                 ), product)
+                # Backfill for rows already seeded before the data-URI encoding fix
+                # (2026-10-22) — scoped to image_url only so real stock/active
+                # changes from live orders aren't reset.
+                conn.execute(text(
+                    "UPDATE shop_products SET image_url = :image_url WHERE id = :id"
+                ), {"id": product["id"], "image_url": product["image_url"]})
         conn.commit()
 
 
