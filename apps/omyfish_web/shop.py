@@ -53,7 +53,10 @@ def render_shop_tab(user: dict | None) -> None:
 
 def _render_cart_badge(count: int) -> None:
     """Fixed top-right pill, offset from Streamlit's own top-right toolbar
-    (hamburger/deploy buttons) rather than overlapping it. Pure CSS/HTML —
+    (hamburger/deploy buttons) rather than overlapping it. Colors are
+    hardcoded rather than inherited from the page theme, so it stays
+    readable in both Streamlit's light and dark modes instead of risking
+    the all-blue-on-blue contrast the first version had. Pure CSS/HTML —
     no JS, so it degrades harmlessly (just an inert span) if a future
     Streamlit version changes something it relies on."""
     if count < 1:
@@ -62,13 +65,21 @@ def _render_cart_badge(count: int) -> None:
         <style>
         .omyfish-cart-badge {{
             position: fixed; top: 0.6rem; right: 4.5rem; z-index: 999999;
-            background: #2c5282; color: white; padding: 0.3rem 0.75rem;
-            border-radius: 999px; font-size: 0.85rem; font-weight: 600;
-            text-decoration: none; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            background: #131921; color: #ffffff; padding: 0.4rem 0.9rem 0.4rem 0.7rem;
+            border-radius: 999px; font-size: 0.9rem; font-weight: 600;
+            text-decoration: none; box-shadow: 0 2px 6px rgba(0,0,0,0.35);
         }}
-        .omyfish-cart-badge:hover {{ background: #3a6ba5; }}
+        .omyfish-cart-badge:hover {{ background: #232f3e; color: #ffffff; }}
+        .omyfish-cart-count {{
+            background: #f08804; color: #131921; min-width: 1.3rem; height: 1.3rem;
+            border-radius: 999px; display: inline-flex; align-items: center;
+            justify-content: center; font-size: 0.78rem; font-weight: 800; padding: 0 0.3rem;
+        }}
         </style>
-        <a class="omyfish-cart-badge" href="#cart-anchor">🛒 Cart ({count})</a>
+        <a class="omyfish-cart-badge" href="#cart-anchor">
+            🛒 Cart <span class="omyfish-cart-count">{count}</span>
+        </a>
     """, unsafe_allow_html=True)
 
 
@@ -193,17 +204,45 @@ def _render_checkout_button(user: dict | None) -> None:
             st.error(f"Could not start checkout: {e}")
 
 
+def _render_attention_checkout_link(url: str) -> None:
+    """A hand-rolled <a> instead of st.link_button: same plain-browser-
+    navigation behavior on click (not a Streamlit rerun — link_buttons and
+    this both skip the server round-trip), but st.link_button doesn't
+    expose any CSS hook, so there's no way to add the pulse animation that
+    draws the user's eye to it — the whole point, since it's easy to miss
+    the checkout step entirely otherwise."""
+    st.markdown(f"""
+        <style>
+        @keyframes omyfish-pulse {{
+            0% {{ box-shadow: 0 0 0 0 rgba(240,136,4,0.6); }}
+            70% {{ box-shadow: 0 0 0 12px rgba(240,136,4,0); }}
+            100% {{ box-shadow: 0 0 0 0 rgba(240,136,4,0); }}
+        }}
+        .omyfish-secure-btn {{
+            display: block; text-align: center; width: 100%;
+            background: #f08804; color: #131921 !important; font-weight: 700;
+            font-size: 1rem; padding: 0.7rem 1rem; border-radius: 0.5rem;
+            text-decoration: none; margin: 0.4rem 0 0.8rem 0;
+            animation: omyfish-pulse 1.8s infinite;
+        }}
+        .omyfish-secure-btn:hover {{ background: #e07b00; }}
+        </style>
+        <a class="omyfish-secure-btn" href="{url}" target="_blank" rel="noopener">
+            Continue to secure checkout →
+        </a>
+    """, unsafe_allow_html=True)
+
+
 def _render_pending_checkout_link() -> None:
     """Kept in session_state (not popped on render) so it survives any
     rerun until the user actually proceeds to Stripe or a new checkout
-    overwrites it — a link_button's click is a plain browser navigation,
-    not a Streamlit rerun, so popping on render (not on click) was the bug:
+    overwrites it — popping on render (not on click) was the original bug:
     it vanished on the very next unrelated widget interaction."""
     if "shop_checkout_url" not in st.session_state:
         return
     url = st.session_state["shop_checkout_url"]
     if url:
-        st.link_button("Continue to secure checkout →", url, use_container_width=True)
+        _render_attention_checkout_link(url)
     else:
         st.session_state.pop("shop_checkout_url")
         st.caption("Payments are not configured on this deployment.")
@@ -216,13 +255,16 @@ def handle_shop_success_redirect() -> None:
     from apps.omyfish_api import shop
 
     if st.query_params.get("shop") == "success" and st.query_params.get("session_id"):
+        order_id = None
         try:
-            shop.confirm_shop_checkout_session(st.query_params["session_id"])
+            order_id = shop.confirm_shop_checkout_session(st.query_params["session_id"])
             st.success("Order confirmed — thank you!")
         except Exception:
             st.warning("Payment received, but we couldn't confirm it automatically — "
                        "contact support if your order doesn't show up shortly.")
         st.session_state.pop("shop_checkout_url", None)
+        if order_id:
+            st.session_state.pop(f"shop_resume_url_{order_id}", None)
         st.query_params.clear()
     elif st.query_params.get("shop") == "canceled":
         st.session_state.pop("shop_checkout_url", None)
@@ -244,6 +286,8 @@ def _render_my_orders(user: dict) -> None:
             for line in order["lines"]:
                 st.write(f"{line['quantity']} × {line['product_name']} — "
                          f"{_cents_to_label(line['unit_price_cents'])} each")
+            if order["status"] == "pending_payment":
+                _render_resume_checkout(order["id"], user_id=user["id"])
             if order["status"] == "paid":
                 within_window = (
                     order["paid_at"] is not None
@@ -259,6 +303,35 @@ def _render_my_orders(user: dict) -> None:
                             st.error(str(e))
 
 
+def _render_resume_checkout(order_id: str, *, user_id: str | None = None,
+                             guest_email: str | None = None) -> None:
+    """Per-order session_state key — not the single shop_checkout_url slot
+    the cart flow uses — so when several pending_payment orders pile up
+    (e.g. from past abandoned checkouts), each keeps its own link instead
+    of only ever the most recently generated one clobbering the rest."""
+    from apps.omyfish_api import shop
+    from shared.config import settings
+
+    resume_key = f"shop_resume_url_{order_id}"
+    if resume_key in st.session_state:
+        _render_attention_checkout_link(st.session_state[resume_key])
+        return
+
+    if st.button("Pay now", key=f"pay_{order_id}"):
+        try:
+            result = shop.resume_checkout(
+                order_id,
+                success_url=f"{settings.app_base_url}?shop=success&session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{settings.app_base_url}?shop=canceled",
+                user_id=user_id,
+                guest_email=guest_email,
+            )
+            st.session_state[resume_key] = result["checkout_url"]
+            st.rerun()
+        except Exception as e:
+            st.error(f"Could not resume checkout: {e}")
+
+
 def _render_guest_order_lookup() -> None:
     from apps.omyfish_api.repositories.order_repository import OrderRepository
 
@@ -268,10 +341,24 @@ def _render_guest_order_lookup() -> None:
         order = OrderRepository().get(order_id) if order_id else None
         if not order or order.get("guest_email") != email:
             st.error("No matching order found.")
+            st.session_state.pop("guest_lookup_found", None)
         else:
+            # Found order is stashed in session_state, not just a local
+            # variable: clicking "Pay now" below triggers its own rerun, on
+            # which "Find order" is back to False, so a local variable here
+            # would lose the result and hide it right as the user needs it.
+            st.session_state["guest_lookup_found"] = (order_id, email)
+
+    found = st.session_state.get("guest_lookup_found")
+    if found:
+        found_order_id, found_email = found
+        order = OrderRepository().get(found_order_id)
+        if order and order.get("guest_email") == found_email:
             st.write(f"Status: **{order['status']}** — {_cents_to_label(order['total_cents'])}")
             for line in order["lines"]:
                 st.write(f"{line['quantity']} × {line['product_name']}")
+            if order["status"] == "pending_payment":
+                _render_resume_checkout(order["id"], guest_email=found_email)
 
 
 def _render_admin_orders() -> None:

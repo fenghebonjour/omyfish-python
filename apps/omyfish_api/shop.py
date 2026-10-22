@@ -128,6 +128,58 @@ def checkout(success_url: str, cancel_url: str, idempotency_key: str,
     return {"order_id": order_id, "checkout_url": session["url"]}
 
 
+def resume_checkout(order_id: str, success_url: str, cancel_url: str,
+                     user_id: Optional[str] = None, guest_email: Optional[str] = None) -> dict:
+    """A pending_payment order's stock is already reserved — unlike
+    checkout(), this never touches stock or the cart, just gets the
+    customer back to a working Stripe Checkout Session for an order they
+    already started but never paid for (e.g. they navigated away, or hit
+    the bug where the one-time checkout link got lost). Reuses the stored
+    session if Stripe still has it open; Checkout Sessions expire (24h
+    default), so falls back to creating a fresh one against the same
+    order's already-committed lines otherwise.
+
+    user_id/guest_email are ownership checks for callers (like the HTTP
+    route) that didn't already scope order_id to this caller themselves —
+    Streamlit's own UI passes the same identity it used to list the order
+    in the first place, same pattern as request_return()."""
+    order = OrderRepository().get(order_id)
+    if not order or order["status"] != "pending_payment":
+        raise InvalidOrderState(f"Order {order_id} is not awaiting payment")
+    owns_as_user = user_id is not None and order.get("user_id") == user_id
+    owns_as_guest = guest_email is not None and order.get("guest_email") == guest_email
+    if not (owns_as_user or owns_as_guest):
+        raise InvalidOrderState(f"Order {order_id} not found")
+
+    stripe = billing._stripe()
+    if order.get("stripe_session_id"):
+        try:
+            existing = as_dict(stripe.checkout.Session.retrieve(order["stripe_session_id"]))
+            if existing.get("status") == "open":
+                return {"checkout_url": existing["url"]}
+        except Exception:
+            pass  # stored session gone/expired/unretrievable — create a fresh one below
+
+    session = as_dict(stripe.checkout.Session.create(
+        mode="payment",
+        line_items=[{
+            "price_data": {
+                "currency": CURRENCY,
+                "product_data": {"name": line["product_name"]},
+                "unit_amount": line["unit_price_cents"],
+            },
+            "quantity": line["quantity"],
+        } for line in order["lines"]],
+        shipping_address_collection={"allowed_countries": SHIPPING_ALLOWED_COUNTRIES},
+        success_url=success_url,
+        cancel_url=cancel_url,
+        customer_email=order.get("guest_email"),
+        client_reference_id=order_id,
+    ))
+    OrderRepository().attach_checkout_session(order_id, session["id"])
+    return {"checkout_url": session["url"]}
+
+
 def _cancel_and_restock(order_id: str) -> None:
     orders = OrderRepository()
     order = orders.get(order_id)

@@ -46,6 +46,9 @@ jobs:
             apps/omyfish_api/dependencies.py \
             apps/omyfish_api/auth.py \
             apps/omyfish_api/billing.py \
+            apps/omyfish_api/shop.py \
+            apps/omyfish_api/routes/shop.py \
+            apps/omyfish_web/shop.py \
             apps/omyfish_api/routes/health.py \
             apps/omyfish_api/routes/species.py \
             apps/omyfish_api/routes/observations.py \

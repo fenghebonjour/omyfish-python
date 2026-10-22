@@ -173,6 +173,34 @@ def get_order(order_id: str, token: TokenData = Depends(get_current_user)):
     return _order_response(order)
 
 
+@router.post("/orders/{order_id}/resume-checkout")
+def resume_order_checkout(order_id: str, body: dict, token: TokenData = Depends(get_current_user)):
+    _ensure()
+    try:
+        return shop.resume_checkout(
+            order_id,
+            success_url=body.get("success_url"),
+            cancel_url=body.get("cancel_url"),
+            user_id=token.user_id,
+        )
+    except InvalidOrderState as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
+
+
+@router.post("/orders/{order_id}/resume-checkout-guest")
+def resume_guest_order_checkout(order_id: str, body: dict):
+    _ensure()
+    try:
+        return shop.resume_checkout(
+            order_id,
+            success_url=body.get("success_url"),
+            cancel_url=body.get("cancel_url"),
+            guest_email=body.get("email"),
+        )
+    except InvalidOrderState as e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(e))
+
+
 @router.post("/orders/{order_id}/returns")
 def request_return(order_id: str, body: dict, token: TokenData = Depends(get_current_user)):
     _ensure()
