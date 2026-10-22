@@ -412,3 +412,20 @@ differently: HF has separate Variables/Secrets tabs, Render has one list
 with a per-entry secret toggle). Verified via Stripe Workbench's in-browser
 Stripe Shell (`stripe trigger checkout.session.completed`), confirmed `200`
 in the destination's Event deliveries log.
+
+**Placeholder images fixed, then upgraded to real photos (2026-10-22):**
+the original seeded `image_url`s were raw (non-base64) SVG data URIs — the
+hex colors' `#` was parsed as the URL fragment delimiter, truncating the
+SVG mid-attribute, so every product showed a broken-image icon. Fixed by
+base64-encoding (migrations 007/008 backfill already-seeded rows). Then,
+since `omyfish-java`'s own seed data never had real photos either (its `V4`
+migration comment says so explicitly — real photos there only exist if an
+admin uploads one via MinIO, not ported here), sourced 6 CC-licensed/
+public-domain photos from Wikimedia Commons/Openverse for Spinnerbait Lure,
+Worm Pack, Popper, Sunglasses, Tackle Box, and Fillet Knife — resized and
+inlined the same self-contained way. Braided Fishing Line and the Insulated
+Mug keep the SVG placeholder; no relevant freely-licensed photo exists for
+either (fishing-line searches mostly surfaced wildlife entangled in line,
+not product shots). Added `shop_products.image_credit` for the CC BY/BY-SA
+attribution the 5 non-public-domain photos require, shown as a caption
+under the image in the Shop tab (migration 009).
