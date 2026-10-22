@@ -126,10 +126,15 @@ def init_db():
                     description     TEXT,
                     price_cents     INTEGER NOT NULL,
                     image_url       TEXT,
+                    image_credit    TEXT,
                     stock_quantity  INTEGER NOT NULL DEFAULT 0,
                     active          INTEGER NOT NULL DEFAULT 1
                 )
             """))
+            try:
+                conn.execute(text("ALTER TABLE shop_products ADD COLUMN image_credit TEXT"))
+            except Exception:
+                pass  # already added in a previous run
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS shop_carts (
                     id           TEXT PRIMARY KEY,
@@ -192,15 +197,21 @@ def init_db():
             for product in SHOP_SEED_PRODUCTS:
                 conn.execute(text(
                     "INSERT OR IGNORE INTO shop_products "
-                    "(id, name, description, price_cents, image_url, stock_quantity, active) "
-                    "VALUES (:id, :name, :description, :price_cents, :image_url, :stock_quantity, :active)"
+                    "(id, name, description, price_cents, image_url, image_credit, stock_quantity, active) "
+                    "VALUES (:id, :name, :description, :price_cents, :image_url, :image_credit, :stock_quantity, :active)"
                 ), product)
                 # Backfill for rows already seeded before the data-URI encoding fix
-                # (2026-10-22) — scoped to image_url only so real stock/active
-                # changes from live orders aren't reset.
+                # (2026-10-22) and the real-photo swap — scoped to image_url/
+                # image_credit only so real stock/active changes from live
+                # orders aren't reset.
                 conn.execute(text(
-                    "UPDATE shop_products SET image_url = :image_url WHERE id = :id"
-                ), {"id": product["id"], "image_url": product["image_url"]})
+                    "UPDATE shop_products SET image_url = :image_url, image_credit = :image_credit "
+                    "WHERE id = :id"
+                ), {
+                    "id": product["id"],
+                    "image_url": product["image_url"],
+                    "image_credit": product["image_credit"],
+                })
         conn.commit()
 
 

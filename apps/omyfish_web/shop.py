@@ -50,6 +50,8 @@ def _render_catalog(user: dict | None) -> None:
     for i, product in enumerate(products):
         with cols[i % 3]:
             st.image(product["image_url"], use_container_width=True)
+            if product.get("image_credit"):
+                st.caption(product["image_credit"])
             st.markdown(f"**{product['name']}**")
             st.caption(product["description"])
             st.write(_cents_to_label(product["price_cents"]))
