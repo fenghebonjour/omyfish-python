@@ -402,5 +402,13 @@ can't see this class of bug at all.
 C's own deploy checklist**: register a second Stripe webhook endpoint
 (`https://omyfish-api.onrender.com/shop/webhook`, events
 `checkout.session.completed`/`checkout.session.expired`) and set
-`STRIPE_SHOP_WEBHOOK_SECRET` on both the HF Space and Render — not yet done,
-since this item was a code port, not a deploy task.
+`STRIPE_SHOP_WEBHOOK_SECRET` on both the HF Space and Render.
+
+**Done (2026-10-22):** destination registered in Stripe Workbench (Stripe's
+"Add endpoint" button is now called "Add destination"), secret set as an HF
+**Secret** and a Render **Environment Variable** (same underlying env var
+either way — the two platforms just split sensitive vs. plain config
+differently: HF has separate Variables/Secrets tabs, Render has one list
+with a per-entry secret toggle). Verified via Stripe Workbench's in-browser
+Stripe Shell (`stripe trigger checkout.session.completed`), confirmed `200`
+in the destination's Event deliveries log.
