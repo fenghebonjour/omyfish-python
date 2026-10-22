@@ -435,3 +435,26 @@ a fishing-reel photo with line visibly wound on the spool, and a steaming
 enamel camp mug — both CC0. All 8 products now use real photos; no SVG
 placeholders remain (migration 010 backfills Postgres; SQLite reconciles
 on every `init_db()` call as before).
+
+**Checkout UI bugs found via real use, fixed (2026-10-22):** a user
+reported clicking "Checkout" then losing the "Continue to secure checkout"
+link on any further interaction, leaving a `pending_payment` order with no
+way to pay. Root cause: `checkout()` clears the cart immediately, and the
+link was (a) rendered only when the cart still had items — gone the
+instant it didn't — and (b) popped from `session_state` on render, not on
+click (a `link_button` click is plain browser navigation, not a Streamlit
+rerun). Fixed by rendering it ahead of the empty-cart check and keeping it
+until the user proceeds or a success/cancel redirect clears it. Also added:
+a `resume_checkout()` "Pay now" path for *any* `pending_payment` order
+(not just the one from the current browser session) in "Your Orders" and
+the guest lookup, each keyed by its own `order_id` instead of one shared
+slot (the earlier single-slot design meant only the most recent checkout's
+link was ever reachable); matching `POST /orders/{id}/resume-checkout[-
+guest]` routes for the Render deployment; a hand-rolled pulsing CTA
+(`st.link_button` has no CSS hook) so the checkout step is hard to miss; a
+redone cart badge with genuinely distinct colors (the first version's
+blue-on-blue was hard to read); and a top-right cart-count badge +
+auto-scroll-to-cart on "Add to cart" (previously no feedback at all).
+12 new tests (7 AppTest UI regressions, 5 API-level) — this class of bug
+(session-state-across-reruns) is invisible to plain API tests, same lesson
+as the earlier guest-cart-token bug above.
