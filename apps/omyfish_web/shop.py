@@ -59,11 +59,19 @@ def _render_catalog(user: dict | None) -> None:
             if st.button("Add to cart", key=f"add_{product['id']}", use_container_width=True,
                          disabled=product["stock_quantity"] < 1):
                 shop.add_to_cart(product["id"], 1, **_owner_kwargs(user))
+                st.toast(f"Added {product['name']} to cart", icon="🛒")
                 st.rerun()
 
 
 def _render_cart(user: dict | None) -> None:
     from apps.omyfish_api import shop
+
+    # Rendered before the empty-cart check: checkout() clears the cart as
+    # soon as it's called, so without this the link would vanish on the
+    # very next rerun (any widget interaction anywhere on the page) with no
+    # way to get back to it — leaving a pending_payment order with no way
+    # to pay, same failure the Shop tab was reported stuck in.
+    _render_pending_checkout_link()
 
     cart = shop.get_cart_with_items(**_owner_kwargs(user))
     if not cart["items"]:
@@ -122,10 +130,14 @@ def _render_checkout_button(user: dict | None) -> None:
                 idem_repo.complete(idem_key, "shop_checkout", {"checkout_url": url})
             st.session_state.pop("shop_checkout_idem", None)
             st.session_state["shop_checkout_url"] = url
+            st.rerun()  # _render_pending_checkout_link() runs before this
+                        # button does, so without a rerun the link set above
+                        # wouldn't show until some unrelated later rerun
         except BillingNotConfigured:
             idem_repo.release(idem_key, "shop_checkout")
             st.session_state.pop("shop_checkout_idem", None)
             st.session_state["shop_checkout_url"] = None
+            st.rerun()
         except IdempotencyConflict:
             pass
         except Exception as e:
@@ -133,14 +145,21 @@ def _render_checkout_button(user: dict | None) -> None:
             st.session_state.pop("shop_checkout_idem", None)
             st.error(f"Could not start checkout: {e}")
 
-    if "shop_checkout_url" in st.session_state:
-        if st.session_state["shop_checkout_url"]:
-            st.link_button("Continue to secure checkout →",
-                           st.session_state.pop("shop_checkout_url"),
-                           use_container_width=True)
-        else:
-            st.session_state.pop("shop_checkout_url")
-            st.caption("Payments are not configured on this deployment.")
+
+def _render_pending_checkout_link() -> None:
+    """Kept in session_state (not popped on render) so it survives any
+    rerun until the user actually proceeds to Stripe or a new checkout
+    overwrites it — a link_button's click is a plain browser navigation,
+    not a Streamlit rerun, so popping on render (not on click) was the bug:
+    it vanished on the very next unrelated widget interaction."""
+    if "shop_checkout_url" not in st.session_state:
+        return
+    url = st.session_state["shop_checkout_url"]
+    if url:
+        st.link_button("Continue to secure checkout →", url, use_container_width=True)
+    else:
+        st.session_state.pop("shop_checkout_url")
+        st.caption("Payments are not configured on this deployment.")
 
 
 def handle_shop_success_redirect() -> None:
@@ -156,6 +175,10 @@ def handle_shop_success_redirect() -> None:
         except Exception:
             st.warning("Payment received, but we couldn't confirm it automatically — "
                        "contact support if your order doesn't show up shortly.")
+        st.session_state.pop("shop_checkout_url", None)
+        st.query_params.clear()
+    elif st.query_params.get("shop") == "canceled":
+        st.session_state.pop("shop_checkout_url", None)
         st.query_params.clear()
 
 
